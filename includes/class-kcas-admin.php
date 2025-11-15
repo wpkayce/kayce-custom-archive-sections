@@ -51,81 +51,86 @@ class KCAS_Admin
             $current_position = 'before';
         }
 ?>
-<style>
-.kcas-field-group {
-    margin-bottom: 16px;
-    padding: 12px;
-    background: #f6f7f7;
-    border: 1px solid #dcdcde;
-    border-radius: 4px;
-}
+        <style>
+            .kcas-field-group {
+                margin-bottom: 16px;
+                padding: 12px;
+                background: #f6f7f7;
+                border: 1px solid #dcdcde;
+                border-radius: 4px;
+            }
 
-.kcas-field-title {
-    font-weight: 600;
-    margin: 0 0 4px;
-}
+            .kcas-field-title {
+                font-weight: 600;
+                margin: 0 0 4px;
+            }
 
-.kcas-meta-help {
-    margin: 0 0 8px;
-    font-size: 12px;
-    color: #555d66;
-}
+            .kcas-meta-help {
+                margin: 0 0 8px;
+                font-size: 12px;
+                color: #555d66;
+            }
 
-.kcas-inline-options label {
-    display: block;
-    margin: 3px 0;
-    font-size: 13px;
-}
-</style>
+            .kcas-inline-options label {
+                display: block;
+                margin: 3px 0;
+                font-size: 13px;
+            }
+        </style>
 
-<div class="kcas-field-group">
-    <p class="kcas-field-title">
-        <?php esc_html_e('Where should this section appear?', 'kayce-custom-archive-sections'); ?>
-    </p>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('Choose which archive pages will display this section.', 'kayce-custom-archive-sections'); ?>
-    </p>
+        <div class="kcas-field-group">
+            <p class="kcas-field-title">
+                <?php esc_html_e('Where should this section appear?', 'kayce-custom-archive-sections'); ?>
+            </p>
+            <p class="kcas-meta-help">
+                <?php esc_html_e('Choose which archive pages will display this section.', 'kayce-custom-archive-sections'); ?>
+            </p>
 
-    <div class="kcas-inline-options">
-        <label>
-            <input type="radio" name="kcas_location" value="blog_index"
-                <?php checked($current_location, 'blog_index'); ?> />
-            <?php esc_html_e('Blog index (posts page)', 'kayce-custom-archive-sections'); ?>
-        </label>
+            <div class="kcas-inline-options">
+                <label>
+                    <input type="radio" name="kcas_location" value="blog_index"
+                        <?php checked($current_location, 'blog_index'); ?> />
+                    <?php esc_html_e('Blog index (posts page)', 'kayce-custom-archive-sections'); ?>
+                </label>
 
-        <label>
-            <input type="radio" name="kcas_location" value="category_archives"
-                <?php checked($current_location, 'category_archives'); ?> />
-            <?php esc_html_e('All category archives', 'kayce-custom-archive-sections'); ?>
-        </label>
+                <label>
+                    <input type="radio" name="kcas_location" value="category_archives"
+                        <?php checked($current_location, 'category_archives'); ?> />
+                    <?php esc_html_e('All category archives', 'kayce-custom-archive-sections'); ?>
+                </label>
+                <lablel>
+                    <input type="radio" name="kcas_location" value="single_post"
+                        <?php checked($current_location, 'single_post'); ?> />
+                    <?php esc_html_e('Single Post', 'kayce-custom-archive-sections'); ?>
+                    </label>
 
-        <label>
-            <input type="radio" name="kcas_location" value="" <?php checked($current_location, ''); ?> />
-            <?php esc_html_e('Do not display on any archive (disabled)', 'kayce-custom-archive-sections'); ?>
-        </label>
-    </div>
-</div>
+                    <label>
+                        <input type="radio" name="kcas_location" value="" <?php checked($current_location, ''); ?> />
+                        <?php esc_html_e('Do not display on any archive (disabled)', 'kayce-custom-archive-sections'); ?>
+                    </label>
+            </div>
+        </div>
 
-<div class="kcas-field-group">
-    <p class="kcas-field-title">
-        <?php esc_html_e('Position on archive page', 'kayce-custom-archive-sections'); ?>
-    </p>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('Should this section appear before or after the list of posts?', 'kayce-custom-archive-sections'); ?>
-    </p>
+        <div class="kcas-field-group">
+            <p class="kcas-field-title">
+                <?php esc_html_e('Position on archive page', 'kayce-custom-archive-sections'); ?>
+            </p>
+            <p class="kcas-meta-help">
+                <?php esc_html_e('Should this section appear before or after the list of posts?', 'kayce-custom-archive-sections'); ?>
+            </p>
 
-    <div class="kcas-inline-options">
-        <label>
-            <input type="radio" name="kcas_position" value="before" <?php checked($current_position, 'before'); ?> />
-            <?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?>
-        </label>
+            <div class="kcas-inline-options">
+                <label>
+                    <input type="radio" name="kcas_position" value="before" <?php checked($current_position, 'before'); ?> />
+                    <?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?>
+                </label>
 
-        <label>
-            <input type="radio" name="kcas_position" value="after" <?php checked($current_position, 'after'); ?> />
-            <?php esc_html_e('After posts', 'kayce-custom-archive-sections'); ?>
-        </label>
-    </div>
-</div>
+                <label>
+                    <input type="radio" name="kcas_position" value="after" <?php checked($current_position, 'after'); ?> />
+                    <?php esc_html_e('After posts', 'kayce-custom-archive-sections'); ?>
+                </label>
+            </div>
+        </div>
 <?php
     }
 
@@ -164,7 +169,7 @@ class KCAS_Admin
         $position = isset($_POST['kcas_position']) ? sanitize_text_field(wp_unslash($_POST['kcas_position'])) : '';
 
         // Whitelist allowed values
-        $allowed_locations = ['', 'blog_index', 'category_archives'];
+        $allowed_locations = ['', 'blog_index', 'category_archives', 'single_post'];
         $allowed_positions = ['', 'before', 'after'];
 
         if (! in_array($location, $allowed_locations, true)) {

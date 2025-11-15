@@ -34,12 +34,15 @@
             if (is_category()) {
                 $this->output_sections_for('category_archives', 'before');
             }
+            if (is_single()) {
+                $this->output_sections_for('single_post', 'before');
+            }
         }
         public function maybe_output_archive_sections_after($query)
         {
 
             // Only affect the main query on the frontend.
-            if (! $query->is_main_query() || is_admin()) {
+            if (!$query->is_main_query() || is_admin()) {
                 return;
             }
 
@@ -52,11 +55,15 @@
             if (is_category()) {
                 $this->output_sections_for('category_archives', 'after');
             }
+            // Single post pages.
+            if (is_single()) {
+                $this->output_sections_for('single_post', 'after');
+            }
         }
 
         public function output_sections_for($location, $position)
         {
-            $allowed_locations = ['blog_index', 'category_archives'];
+            $allowed_locations = ['blog_index', 'category_archives', 'single_post'];
             $allowed_positions = ['before', 'after'];
 
             if (!in_array($location, $allowed_locations, true)) {
