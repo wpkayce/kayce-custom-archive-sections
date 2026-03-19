@@ -33,11 +33,12 @@ class KCAS_Plugin {
 	const META_CATEGORIES = '_kcas_categories';
 
 	/**
-	 * Constructor — load files, initialise i18n, bootstrap components.
+	 * Constructor — load files and bootstrap components.
+	 *
+	 * Note: translations are loaded automatically by WordPress when the plugin
+	 * is hosted on WordPress.org (since WP 4.6). No manual textdomain call needed.
 	 */
 	public function __construct() {
-		$this->load_textdomain();
-
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-cpt.php';
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-cache.php';
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-admin.php';
@@ -70,14 +71,4 @@ class KCAS_Plugin {
 		);
 	}
 
-	/**
-	 * Load the plugin text domain for translations.
-	 */
-	private function load_textdomain() {
-		load_plugin_textdomain(
-			'kayce-custom-archive-sections',
-			false,
-			dirname( plugin_basename( KCAS_PLUGIN_FILE ) ) . '/languages'
-		);
-	}
 }

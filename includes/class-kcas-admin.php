@@ -473,7 +473,7 @@ class KCAS_Admin {
 							}
 						}
 						if ( ! empty( $names ) ) {
-							echo '<br><span class="kcas-col-hint">' . implode( ', ', $names );
+							echo '<br><span class="kcas-col-hint">' . implode( ', ', $names ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- each element already passed through esc_html() above
 							if ( count( $cat_ids ) > 3 ) {
 								echo ' &hellip;';
 							}

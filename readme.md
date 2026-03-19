@@ -2,7 +2,7 @@
 
 **Contributors:** wpkayce
 **Requires at least:** WordPress 6.0
-**Tested up to:** WordPress 6.7
+**Tested up to:** WordPress 6.9
 **Requires PHP:** 7.4
 **Stable tag:** 1.0.0
 **License:** GPL-2.0+

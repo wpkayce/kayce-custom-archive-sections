@@ -273,7 +273,7 @@ class KCAS_Frontend {
 
 			// ── Build section content ─────────────────────────────────────────
 			$content = get_the_content();
-			$content = apply_filters( 'the_content', $content );
+			$content = apply_filters( 'the_content', $content ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally applying the core WP content filter
 			$content = str_replace( ']]>', ']]&gt;', $content );
 
 			$section_html = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr( $post_id ) . '">';

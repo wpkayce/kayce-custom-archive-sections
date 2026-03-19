@@ -13,18 +13,32 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-global $wpdb;
-
-// Delete all kcas_section posts and their associated meta.
-$post_ids = $wpdb->get_col(
-	$wpdb->prepare(
-		"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s",
-		'kcas_section'
+// Fetch all kcas_section post IDs via the WP API (no direct DB query needed).
+$kcas_post_ids = get_posts(
+	array(
+		'post_type'      => 'kcas_section',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'no_found_rows'  => true,
 	)
 );
 
-if ( ! empty( $post_ids ) ) {
-	foreach ( $post_ids as $post_id ) {
-		wp_delete_post( (int) $post_id, true ); // true = force delete, skip trash.
-	}
+foreach ( $kcas_post_ids as $kcas_post_id ) {
+	wp_delete_post( (int) $kcas_post_id, true ); // true = force delete, skip trash.
+}
+
+// Remove any leftover cache version options.
+$kcas_locations = array(
+	'blog_index',
+	'category_archives',
+	'specific_categories',
+	'tag_archives',
+	'author_archives',
+	'search_results',
+	'date_archives',
+);
+
+foreach ( $kcas_locations as $kcas_location ) {
+	delete_option( 'kcas_cache_v_' . $kcas_location );
 }
