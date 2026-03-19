@@ -1,72 +1,146 @@
-=== Kayce Custom Archive Sections ===
-Contributors: wpkayce
-Tags: archive, content sections, blog layout, gutenberg, elementor
-Requires at least: 6.8
-Tested up to: 6.8
-Requires PHP: 7.4
-Stable tag: 1.0.0
-License: GPL-2.0+
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+# Kayce Custom Archive Sections
 
-Add reusable content sections before or after posts on your blog index and category archives. Fully compatible with Gutenberg and Elementor.
+**Contributors:** wpkayce
+**Requires at least:** WordPress 6.0
+**Tested up to:** WordPress 6.7
+**Requires PHP:** 7.4
+**Stable tag:** 1.0.0
+**License:** GPL-2.0+
+**License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
-== Description ==
+Add reusable content sections before or after posts on any archive page — blog index, categories, tags, authors, search results, and more.
 
-**Kayce Custom Archive Sections** lets you easily add custom content areas to your WordPress archive pages — such as your blog index or category archives — without editing your theme files.
+---
 
-You can create reusable “archive sections” that appear automatically **before** or **after** the main list of posts.  
-Each section supports the block editor (Gutenberg) and can also be designed with Elementor for full creative control.
+## Description
 
-### Key Features
+**Kayce Custom Archive Sections** lets you create and manage reusable content areas that appear automatically before or after the post loop on your WordPress archive pages — no theme file editing required.
 
-- Add custom content **before or after** posts on:
-  - Blog index page
-  - Category archive pages
-- Seamless support for **Gutenberg** and **Elementor**
-- Reusable content sections as custom post types
-- Clean and optimized query handling
-- Fully compatible with caching and standard themes
-- Simple, intuitive interface — no coding required
+Each section is a regular WordPress post, so you can design it with the **block editor (Gutenberg)** or **Elementor**, publish it once, and it shows up exactly where you set it.
 
-### Perfect for:
+The plugin works with both **classic PHP themes** and modern **Full Site Editing (FSE) / block themes** like Twenty Twenty-Five — out of the box, with no extra configuration.
 
-- Adding a hero banner or intro section above your blog feed
-- Including promotional content or newsletter sign-ups below posts
-- Custom messaging for specific archive types
+### Archive locations supported
 
-== Installation ==
+- Blog index (Posts page)
+- All category archives
+- Specific category archives — target individual categories with a built-in category picker
+- Tag archives
+- Author archives
+- Search results pages
+- Date archives
 
-1. Upload the plugin folder `kayce-custom-archive-sections` to your `/wp-content/plugins/` directory.
-2. Activate **Kayce Custom Archive Sections** through the **Plugins** menu in WordPress.
-3. Go to **Archive Sections → Add New** to create your first custom section.
-4. Choose where to display it (before or after) and save.
-5. Visit your blog index or category page to see it in action.
+### Display controls
 
-== Frequently Asked Questions ==
+- **Before or after** the post loop — per section
+- **Active / Inactive toggle** — publish a section without displaying it yet
+- **Visibility by login state** — show to everyone, logged-in users only, or logged-out visitors only
 
-= Does this plugin work with Elementor or Gutenberg? =  
-Yes! You can edit sections using either the **block editor** or **Elementor** — whichever you prefer.
+### Admin experience
 
-= Can I choose which archives to display my sections on? =  
-Currently, the plugin supports the **blog index** and **category archive** pages. More options may be added in future updates.
+- At-a-glance list table with Active, Location, Position, and Visibility columns
+- One-click **Duplicate** action to clone any section as a draft
+- **Preview link** in the meta box that jumps straight to the relevant archive page
+- Display order controlled via the standard **Order** field (Page Attributes)
 
-= Will it slow down my site? =  
-No. The plugin uses efficient database queries and only runs on the relevant archive pages. Queries are optimized for small datasets.
+### Performance & security
 
-== Changelog ==
+- **Transient caching** — sections are cached per location, position, and login state; cache is busted automatically when a section is saved or the plugin is deactivated
+- Admin CSS and JavaScript load **only on the Archive Sections edit screen** — zero frontend asset overhead
+- All inputs validated against whitelists; category IDs cast with `absint()`; nonces verified with `sanitize_key()`
+- Works with all standard caching plugins
 
-= 1.0.0 =
+### For developers
 
-- Initial release.
-- Added support for before/after content on blog index and category archives.
-- Integrated with Gutenberg and Elementor editors.
+| Hook | Type | Description |
+|------|------|-------------|
+| `kcas_query_args` | Filter | Modify WP_Query args before sections are fetched |
+| `kcas_section_html` | Filter | Modify the HTML of an individual section |
+| `kcas_sections_html` | Filter | Modify the complete output wrapper HTML |
+| `kcas_before_sections` | Action | Fires before the sections wrapper is output |
+| `kcas_after_sections` | Action | Fires after the sections wrapper is output |
 
-== Upgrade Notice ==
+Sections are wrapped in `<section class="kcas-archive-section" id="kcas-section-{ID}">` and `<div class="kcas-archive-sections kcas-archive-sections--{before|after}">` for easy CSS targeting.
 
-= 1.0.0 =
-First public release of **Kayce Custom Archive Sections**.
+---
 
-== License ==
+## Installation
 
-This plugin is licensed under the GNU General Public License v2.0 or later.  
-See [https://www.gnu.org/licenses/gpl-2.0.html](https://www.gnu.org/licenses/gpl-2.0.html) for details.
+### From the WordPress Plugin Directory
+
+1. Go to **Plugins → Add New** in your WordPress admin.
+2. Search for **Kayce Custom Archive Sections**.
+3. Click **Install Now**, then **Activate**.
+
+### Manual Installation
+
+1. Download the plugin ZIP file.
+2. Go to **Plugins → Add New → Upload Plugin**.
+3. Upload the ZIP and click **Install Now**, then **Activate**.
+
+### Getting Started
+
+1. After activation, go to **Archive Sections → Add New** in the admin menu.
+2. Write or design your section content using the block editor or Elementor.
+3. In the **Archive Section Settings** meta box, configure:
+   - **Location** — choose which archive page(s) to target. Selecting *Specific Categories* reveals a category picker.
+   - **Position** — before or after the post loop.
+   - **Active** — tick to enable the section immediately.
+   - **Visibility** — show to everyone, logged-in users only, or logged-out visitors only.
+4. Click **Publish**.
+5. Visit the matching archive page — your section will appear automatically.
+
+> **Tip:** Use the **Order** field (Page Attributes panel) to control display order when multiple sections share the same location and position. Lower numbers appear first.
+
+---
+
+## Frequently Asked Questions
+
+**Does this work with any theme?**
+Yes — including Full Site Editing (block) themes like Twenty Twenty-Five. The plugin automatically detects whether your active theme is a classic or block theme and uses the correct rendering pipeline for each.
+
+**Can I use Elementor to design my sections?**
+Yes. The Archive Section CPT has `show_in_rest` enabled, making it fully compatible with the block editor. Elementor also supports editing custom post types out of the box.
+
+**Can I target a specific category page?**
+Yes. Set the location to **Specific Categories**, then tick the categories you want in the category picker that appears. The section will only display on those category archives.
+
+**Can I show different content to logged-in and logged-out users?**
+Yes. Each section has a **Visibility** setting: *Everyone*, *Logged-in users only*, or *Logged-out visitors only*.
+
+**How do I temporarily disable a section without deleting it?**
+Uncheck the **Active** checkbox in the meta box and update the post.
+
+**Does the plugin add any database tables?**
+No. It uses WordPress's standard `wp_posts`, `wp_postmeta`, and `wp_options` tables only.
+
+**What happens when I delete the plugin?**
+The included `uninstall.php` permanently deletes all Archive Section posts and their meta data when the plugin is removed.
+
+---
+
+## Changelog
+
+### 1.0.0
+- Initial release
+- Custom post type (`kcas_section`) for creating reusable archive sections
+- Display sections before or after posts on the **blog index** and **category archive** pages
+- Support for **specific category targeting** with a scrollable category picker
+- Additional archive locations: **tag archives**, **author archives**, **search results**, **date archives**
+- Per-section **Active / Inactive toggle**
+- Per-section **login-state visibility** control (everyone / logged-in / logged-out)
+- Admin list table columns: Active, Location, Position, Visibility
+- **Duplicate / Clone** row action with nonce and capability checks
+- **Preview link** in the meta box resolving the real archive URL per location type
+- **Transient caching** with version-stamped keys and targeted per-location cache busting on save
+- Admin CSS and JS enqueued only on the Archive Section edit screen
+- Full compatibility with **classic themes** and **FSE / block themes** (Twenty Twenty-Five, etc.)
+- Fully compatible with **Gutenberg** and **Elementor**
+- Developer hooks: `kcas_query_args`, `kcas_section_html`, `kcas_sections_html`, `kcas_before_sections`, `kcas_after_sections`
+- `uninstall.php` for clean removal
+
+---
+
+## License
+
+This plugin is licensed under the [GNU General Public License v2.0 or later](https://www.gnu.org/licenses/gpl-2.0.html).
