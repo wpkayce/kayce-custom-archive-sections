@@ -1,6 +1,5 @@
 === Kayce Custom Archive Sections ===
 Contributors: wpkayce
-Donate link: https://wpkayce.com
 Tags: archive, content sections, blog layout, gutenberg, elementor
 Requires at least: 6.8
 Tested up to: 6.8

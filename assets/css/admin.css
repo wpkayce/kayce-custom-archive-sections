@@ -1,0 +1,135 @@
+/**
+ * Admin styles for Kayce Custom Archive Sections.
+ * Loaded only on the Archive Section CPT edit screen.
+ */
+
+/* ── Meta box field groups ──────────────────────────────────────────────── */
+
+.kcas-field-group {
+	margin-bottom: 14px;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.kcas-field-title {
+	font-weight: 600;
+	margin: 0 0 3px;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	color: #3c434a;
+}
+
+.kcas-meta-help {
+	margin: 0 0 8px;
+	font-size: 11px;
+	color: #646970;
+}
+
+/* ── Radio / checkbox options ───────────────────────────────────────────── */
+
+.kcas-inline-options label {
+	display: block;
+	margin: 4px 0;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.kcas-inline-options label:hover {
+	color: #2271b1;
+}
+
+/* ── Active toggle ──────────────────────────────────────────────────────── */
+
+.kcas-active-label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.kcas-active-label input[type="checkbox"] {
+	margin: 0;
+}
+
+/* ── Category list ──────────────────────────────────────────────────────── */
+
+.kcas-category-list {
+	max-height: 160px;
+	overflow-y: auto;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	background: #fff;
+	padding: 6px 8px;
+}
+
+.kcas-category-list label {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 2px 0;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.kcas-category-list label:hover {
+	color: #2271b1;
+}
+
+.kcas-cat-count {
+	color: #8c8f94;
+	font-size: 11px;
+}
+
+/* ── Preview link group ─────────────────────────────────────────────────── */
+
+.kcas-preview-group {
+	text-align: center;
+}
+
+.kcas-preview-group .button {
+	width: 100%;
+	text-align: center;
+	box-sizing: border-box;
+}
+
+/* ── List table columns ─────────────────────────────────────────────────── */
+
+.column-kcas_active,
+.column-kcas_position,
+.column-kcas_visibility {
+	width: 100px;
+}
+
+.column-kcas_location {
+	width: 140px;
+}
+
+.kcas-badge {
+	display: inline-block;
+	padding: 2px 7px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.kcas-badge--active {
+	background: #edfaef;
+	color: #1a7e35;
+	border: 1px solid #b8e6c1;
+}
+
+.kcas-badge--inactive {
+	background: #f6f7f7;
+	color: #787c82;
+	border: 1px solid #dcdcde;
+}
+
+.kcas-col-hint {
+	color: #8c8f94;
+	font-size: 11px;
+	font-style: italic;
+}

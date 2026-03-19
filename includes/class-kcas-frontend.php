@@ -1,104 +1,399 @@
- <?php
+<?php
+/**
+ * Frontend output for Kayce Custom Archive Sections.
+ *
+ * Supports two rendering pipelines:
+ *  1. Classic themes  — hooks into loop_start / loop_end after get_header fires.
+ *  2. Block/FSE themes — filters the rendered core/query block that inherits
+ *     the main archive query (e.g. Twenty Twenty-Five).
+ *
+ * Additional features:
+ *  - All archive types: blog index, all categories, specific categories,
+ *    tag archives, author archives, search results, date archives.
+ *  - Active toggle: only active sections are shown.
+ *  - Login-state visibility: per-section control over who sees it.
+ *  - Transient caching: cache hits skip the WP_Query entirely.
+ *  - Developer hooks: filters and actions at every key output point.
+ *
+ * @package Kayce_Custom_Archive_Sections
+ */
 
-    if (! defined('ABSPATH')) {
-        exit; // Exit if accessed directly.
-    }
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
-    class KCAS_Frontend
-    {
+/**
+ * Class KCAS_Frontend
+ */
+class KCAS_Frontend {
 
-        protected $post_type;
-        protected $meta_location;
-        protected $meta_position;
+	/** @var string */
+	protected $post_type;
+	/** @var string */
+	protected $meta_location;
+	/** @var string */
+	protected $meta_position;
+	/** @var string */
+	protected $meta_active;
+	/** @var string */
+	protected $meta_visibility;
+	/** @var string */
+	protected $meta_categories;
 
-        public function __construct($post_type, $meta_location, $meta_position)
-        {
-            $this->post_type = $post_type;
-            $this->meta_location = $meta_location;
-            $this->meta_position = $meta_position;
-            if (!is_admin()) {
-                add_action('loop_start', [$this, 'maybe_output_archive_sections_before']);
-                add_action('loop_end', [$this, 'maybe_output_archive_sections_after']);
-            }
-        }
+	/**
+	 * Constructor.
+	 *
+	 * @param string $post_type
+	 * @param string $meta_location
+	 * @param string $meta_position
+	 * @param string $meta_active
+	 * @param string $meta_visibility
+	 * @param string $meta_categories
+	 */
+	public function __construct( $post_type, $meta_location, $meta_position, $meta_active, $meta_visibility, $meta_categories ) {
+		$this->post_type       = $post_type;
+		$this->meta_location   = $meta_location;
+		$this->meta_position   = $meta_position;
+		$this->meta_active     = $meta_active;
+		$this->meta_visibility = $meta_visibility;
+		$this->meta_categories = $meta_categories;
 
-        public function maybe_output_archive_sections_before($query)
-        {
-            if (!$query->is_main_query() || is_admin()) {
-                return;
-            }
+		if ( is_admin() ) {
+			return;
+		}
 
-            if (is_home()) {
-                $this->output_sections_for('blog_index', 'before');
-            }
-            if (is_category()) {
-                $this->output_sections_for('category_archives', 'before');
-            }
-        }
-        public function maybe_output_archive_sections_after($query)
-        {
+		if ( wp_is_block_theme() ) {
+			add_filter( 'render_block', array( $this, 'inject_around_query_block' ), 10, 2 );
+		} else {
+			add_action( 'get_header', array( $this, 'register_loop_hooks' ) );
+		}
+	}
 
-            // Only affect the main query on the frontend.
-            if (! $query->is_main_query() || is_admin()) {
-                return;
-            }
+	// =========================================================================
+	// Classic theme pipeline
+	// =========================================================================
 
-            // Blog index (posts page).
-            if (is_home()) {
-                $this->output_sections_for('blog_index', 'after');
-            }
+	/**
+	 * Register loop hooks after get_header so sections can never appear
+	 * before the page header (classic themes only).
+	 */
+	public function register_loop_hooks() {
+		add_action( 'loop_start', array( $this, 'maybe_output_sections_before' ) );
+		add_action( 'loop_end',   array( $this, 'maybe_output_sections_after' ) );
+	}
 
-            // Category archive pages.
-            if (is_category()) {
-                $this->output_sections_for('category_archives', 'after');
-            }
-        }
+	/**
+	 * Output sections before the post loop (classic themes).
+	 *
+	 * @param WP_Query $query
+	 */
+	public function maybe_output_sections_before( $query ) {
+		if ( ! $query->is_main_query() || is_admin() ) {
+			return;
+		}
 
-        public function output_sections_for($location, $position)
-        {
-            $allowed_locations = ['blog_index', 'category_archives'];
-            $allowed_positions = ['before', 'after'];
+		foreach ( $this->resolve_locations() as $loc ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo $this->get_sections_html( $loc['location'], 'before', $loc['extra'] );
+		}
+	}
 
-            if (!in_array($location, $allowed_locations, true)) {
-                return;
-            }
+	/**
+	 * Output sections after the post loop (classic themes).
+	 *
+	 * @param WP_Query $query
+	 */
+	public function maybe_output_sections_after( $query ) {
+		if ( ! $query->is_main_query() || is_admin() ) {
+			return;
+		}
 
-            if (!in_array($position, $allowed_positions, true)) {
-                return;
-            }
-            //Query all matching archive sections. 
-            $sections_query = new WP_Query(
-                [
-                    'post_type' => $this->post_type,
-                    'post_status' => 'publish',
-                    'posts_per_page' => -1,
-                    'orderby' => 'menu_order title',
-                    'order' => 'ASC',
-                    'no_found_rows' => true,
-                    'meta_query' => [
-                        [
-                            'key' => $this->meta_location,
-                            'value' => $location,
-                        ],
-                        [
-                            'key' => $this->meta_position,
-                            'value' => $position,
-                        ],
-                    ],
-                ]
-            );
-            if (!$sections_query->have_posts()) {
-                return;
-            }
-            echo '<div class="kcas-archive-sections kcas-archive-sections--' . esc_attr($position) . '">';
-            while ($sections_query->have_posts()) {
-                $sections_query->the_post();
-                echo '<section class="kcas-archive-section" id="kcas-section-' . esc_attr(get_the_ID()) . '">';
+		foreach ( $this->resolve_locations() as $loc ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo $this->get_sections_html( $loc['location'], 'after', $loc['extra'] );
+		}
+	}
 
-                the_content();
-                echo '</section>';
-            }
-            echo '</div>';
-            wp_reset_postdata();
-        }
-    }
+	// =========================================================================
+	// Block / FSE theme pipeline
+	// =========================================================================
+
+	/**
+	 * Wrap the core/query block with archive sections (block/FSE themes).
+	 *
+	 * @param string $block_content Rendered block HTML.
+	 * @param array  $block         Parsed block data.
+	 * @return string
+	 */
+	public function inject_around_query_block( $block_content, $block ) {
+		if ( 'core/query' !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		// Only wrap Query blocks that inherit the main archive query.
+		if ( empty( $block['attrs']['query']['inherit'] ) ) {
+			return $block_content;
+		}
+
+		$locations = $this->resolve_locations();
+		if ( empty( $locations ) ) {
+			return $block_content;
+		}
+
+		$before = '';
+		$after  = '';
+
+		foreach ( $locations as $loc ) {
+			$before .= $this->get_sections_html( $loc['location'], 'before', $loc['extra'] );
+			$after  .= $this->get_sections_html( $loc['location'], 'after',  $loc['extra'] );
+		}
+
+		if ( ! $before && ! $after ) {
+			return $block_content;
+		}
+
+		return $before . $block_content . $after;
+	}
+
+	// =========================================================================
+	// Location resolution
+	// =========================================================================
+
+	/**
+	 * Determine which location slugs apply to the current archive page.
+	 *
+	 * Returns an array of arrays, each with:
+	 *  - 'location' string  The location slug to query.
+	 *  - 'extra'    string  Extra context for the cache key (e.g. category ID).
+	 *
+	 * @return array
+	 */
+	private function resolve_locations() {
+		if ( is_home() ) {
+			return array( array( 'location' => 'blog_index', 'extra' => '' ) );
+		}
+
+		if ( is_category() ) {
+			$cat_id = (int) get_queried_object_id();
+			return array(
+				// Sections assigned to ALL category archives.
+				array( 'location' => 'category_archives',   'extra' => '' ),
+				// Sections assigned to SPECIFIC categories (filtered by cat ID).
+				array( 'location' => 'specific_categories', 'extra' => (string) $cat_id ),
+			);
+		}
+
+		if ( is_tag() ) {
+			return array( array( 'location' => 'tag_archives', 'extra' => '' ) );
+		}
+
+		if ( is_author() ) {
+			return array( array( 'location' => 'author_archives', 'extra' => '' ) );
+		}
+
+		if ( is_search() ) {
+			return array( array( 'location' => 'search_results', 'extra' => '' ) );
+		}
+
+		if ( is_date() ) {
+			return array( array( 'location' => 'date_archives', 'extra' => '' ) );
+		}
+
+		return array();
+	}
+
+	// =========================================================================
+	// Core HTML builder
+	// =========================================================================
+
+	/**
+	 * Build and return the HTML for all sections matching a location + position.
+	 *
+	 * Checks the transient cache first. On a miss, runs the WP_Query,
+	 * applies visibility filters, builds the HTML, and stores it in cache.
+	 *
+	 * Developer hooks are applied at every key stage (feature 5).
+	 *
+	 * @param string $location One of the supported location slugs.
+	 * @param string $position 'before' or 'after'.
+	 * @param string $extra    Extra cache-key context (e.g. category ID).
+	 * @return string HTML string, or empty string if nothing to show.
+	 */
+	public function get_sections_html( $location, $position, $extra = '' ) {
+		$allowed_locations = array(
+			'blog_index', 'category_archives', 'specific_categories',
+			'tag_archives', 'author_archives', 'search_results', 'date_archives',
+		);
+		$allowed_positions = array( 'before', 'after' );
+
+		if (
+			! in_array( $location, $allowed_locations, true ) ||
+			! in_array( $position, $allowed_positions, true )
+		) {
+			return '';
+		}
+
+		// ── Cache check (feature 3a) ──────────────────────────────────────────
+		$cached = KCAS_Cache::get( $location, $position, $extra );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		// ── Developer hook: allow query arg modification (feature 5) ─────────
+		$query_args = apply_filters(
+			'kcas_query_args',
+			$this->build_query_args( $location, $position ),
+			$location,
+			$position
+		);
+
+		$sections_query = new WP_Query( $query_args );
+
+		if ( ! $sections_query->have_posts() ) {
+			// Cache the empty result too, to avoid repeated DB hits.
+			KCAS_Cache::set( $location, $position, '', $extra );
+			return '';
+		}
+
+		// ── Developer action: fires before any sections HTML (feature 5) ─────
+		ob_start();
+		do_action( 'kcas_before_sections', $location, $position );
+		$before_action = ob_get_clean();
+
+		$inner = '';
+
+		while ( $sections_query->have_posts() ) {
+			$sections_query->the_post();
+			$post_id = get_the_ID();
+
+			// ── Visibility check (feature 1e) ─────────────────────────────────
+			if ( ! $this->passes_visibility_check( $post_id ) ) {
+				continue;
+			}
+
+			// ── Build section content ─────────────────────────────────────────
+			$content = get_the_content();
+			$content = apply_filters( 'the_content', $content );
+			$content = str_replace( ']]>', ']]&gt;', $content );
+
+			$section_html = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr( $post_id ) . '">';
+			$section_html .= $content;
+			$section_html .= '</section>';
+
+			// ── Developer filter: per-section HTML (feature 5) ────────────────
+			$section_html = apply_filters( 'kcas_section_html', $section_html, $post_id, $location, $position );
+
+			$inner .= $section_html;
+		}
+
+		wp_reset_postdata();
+
+		if ( '' === $inner ) {
+			KCAS_Cache::set( $location, $position, '', $extra );
+			return '';
+		}
+
+		$wrapper = '<div class="kcas-archive-sections kcas-archive-sections--' . esc_attr( $position ) . '">';
+		$wrapper .= $inner;
+		$wrapper .= '</div>';
+
+		// ── Developer action: fires after sections HTML (feature 5) ──────────
+		ob_start();
+		do_action( 'kcas_after_sections', $location, $position );
+		$after_action = ob_get_clean();
+
+		$html = $before_action . $wrapper . $after_action;
+
+		// ── Developer filter: full output (feature 5) ─────────────────────────
+		$html = apply_filters( 'kcas_sections_html', $html, $location, $position );
+
+		// ── Store in cache (feature 3a) ───────────────────────────────────────
+		KCAS_Cache::set( $location, $position, $html, $extra );
+
+		return $html;
+	}
+
+	// =========================================================================
+	// Helpers
+	// =========================================================================
+
+	/**
+	 * Build the WP_Query args for fetching sections.
+	 *
+	 * For 'specific_categories', the query fetches ALL specific-category
+	 * sections and relies on PHP filtering (passes_visibility_check + category
+	 * matching) to narrow the result — avoids unreliable LIKE queries on
+	 * serialised meta.
+	 *
+	 * @param string $location
+	 * @param string $position
+	 * @return array
+	 */
+	private function build_query_args( $location, $position ) {
+		$meta_query = array(
+			'relation' => 'AND',
+			array(
+				'key'     => $this->meta_location,
+				'value'   => $location,
+				'compare' => '=',
+			),
+			array(
+				'key'     => $this->meta_position,
+				'value'   => $position,
+				'compare' => '=',
+			),
+			array(
+				'key'     => $this->meta_active,
+				'value'   => '1',
+				'compare' => '=',
+			),
+		);
+
+		return array(
+			'post_type'              => $this->post_type,
+			'post_status'            => 'publish',
+			'posts_per_page'         => -1,
+			'orderby'                => array(
+				'menu_order' => 'ASC',
+				'title'      => 'ASC',
+			),
+			'no_found_rows'          => true,
+			'update_post_term_cache' => false,
+			'meta_query'             => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		);
+	}
+
+	/**
+	 * Check whether the current visitor matches the section's visibility setting
+	 * and — for specific_categories — whether the current category is selected.
+	 *
+	 * @param int $post_id Section post ID (current post in the loop).
+	 * @return bool True if the section should be displayed.
+	 */
+	private function passes_visibility_check( $post_id ) {
+		// ── Login-state check (feature 1e) ────────────────────────────────────
+		$visibility = get_post_meta( $post_id, $this->meta_visibility, true );
+
+		if ( 'logged_in' === $visibility && ! is_user_logged_in() ) {
+			return false;
+		}
+
+		if ( 'logged_out' === $visibility && is_user_logged_in() ) {
+			return false;
+		}
+
+		// ── Specific-category check ───────────────────────────────────────────
+		$location = get_post_meta( $post_id, $this->meta_location, true );
+
+		if ( 'specific_categories' === $location && is_category() ) {
+			$saved_cats  = get_post_meta( $post_id, $this->meta_categories, true );
+			$current_cat = (int) get_queried_object_id();
+
+			if ( ! is_array( $saved_cats ) || ! in_array( $current_cat, array_map( 'intval', $saved_cats ), true ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+}

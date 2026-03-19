@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Plugin Name:       Kayce Custom Archive Sections
  * Plugin URI:        https://wpkayce.com/plugins/kayce-custom-archive-sections
@@ -8,31 +7,51 @@
  * Author:            WPKayce
  * Author URI:        https://wpkayce.com
  * Text Domain:       kayce-custom-archive-sections
+ * Domain Path:       /languages
  * License:           GPL-2.0+
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Domain Path:       /languages
- * Requires at least: 6.8
+ * Requires at least: 6.0
  * Requires PHP:      7.4
  *
  * @package Kayce_Custom_Archive_Sections
  */
 
-if (! defined('ABSPATH')) {
-    exit; // Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
+define( 'KCAS_PLUGIN_VERSION', '1.0.0' );
+define( 'KCAS_PLUGIN_FILE', __FILE__ );
+define( 'KCAS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'KCAS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
-define('KCAS_PLUGIN_VERSION', '1.0.0');
-define('KCAS_PLUGIN_FILE', __FILE__);
-define('KCAS_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('KCAS_PLUGIN_URL', plugin_dir_url(__FILE__));
-
-// Load the main plugin class.
-require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-plugin.php';
-
-
-function kcas_run_plugin()
-{
-    new KCAS_Plugin();
+/**
+ * Flush rewrite rules on activation so the CPT is immediately available.
+ */
+function kcas_activate() {
+	require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-cpt.php';
+	$cpt = new KCAS_CPT( 'kcas_section' );
+	$cpt->register_archive_section_cpt();
+	flush_rewrite_rules();
 }
-kcas_run_plugin();
+register_activation_hook( __FILE__, 'kcas_activate' );
+
+/**
+ * Flush rewrite rules on deactivation for a clean slate.
+ */
+function kcas_deactivate() {
+	if ( class_exists( 'KCAS_Cache' ) ) {
+		KCAS_Cache::bust_all();
+	}
+	flush_rewrite_rules();
+}
+register_deactivation_hook( __FILE__, 'kcas_deactivate' );
+
+/**
+ * Bootstrap the plugin on plugins_loaded so all dependencies are available.
+ */
+function kcas_run_plugin() {
+	require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-plugin.php';
+	new KCAS_Plugin();
+}
+add_action( 'plugins_loaded', 'kcas_run_plugin' );
