@@ -2,11 +2,11 @@
 
 /**
  * Plugin Name:       Kayce Custom Archive Sections
- * Plugin URI:        
+ * Plugin URI:        https://github.com/wpkayce/kayce-custom-archive-sections
  * Description:       Create and manage reusable content sections that automatically display before or after posts on your blog index and category archive pages. Designed to work seamlessly with Gutenberg and Elementor.
  * Version:           1.0.0
- * Author:            WPKayce
- * Author URI:        https://profiles.wordpress.org/wpkayce
+ * Author:            rohitkc32,wpkacey
+ * Author URI:        https://profiles.wordpress.org/rohitkc32
  * Text Domain:       kayce-custom-archive-sections
  * Domain Path:       /languages
  * License:           GPL-2.0+
