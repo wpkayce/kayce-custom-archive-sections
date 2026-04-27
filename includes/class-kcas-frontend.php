@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Frontend output for Kayce Custom Archive Sections.
  *
@@ -18,14 +19,15 @@
  * @package Kayce_Custom_Archive_Sections
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
 /**
  * Class KCAS_Frontend
  */
-class KCAS_Frontend {
+class KCAS_Frontend
+{
 
 	/** @var string */
 	protected $post_type;
@@ -50,7 +52,8 @@ class KCAS_Frontend {
 	 * @param string $meta_visibility
 	 * @param string $meta_categories
 	 */
-	public function __construct( $post_type, $meta_location, $meta_position, $meta_active, $meta_visibility, $meta_categories ) {
+	public function __construct($post_type, $meta_location, $meta_position, $meta_active, $meta_visibility, $meta_categories)
+	{
 		$this->post_type       = $post_type;
 		$this->meta_location   = $meta_location;
 		$this->meta_position   = $meta_position;
@@ -58,14 +61,14 @@ class KCAS_Frontend {
 		$this->meta_visibility = $meta_visibility;
 		$this->meta_categories = $meta_categories;
 
-		if ( is_admin() ) {
+		if (is_admin()) {
 			return;
 		}
 
-		if ( wp_is_block_theme() ) {
-			add_filter( 'render_block', array( $this, 'inject_around_query_block' ), 10, 2 );
+		if (wp_is_block_theme()) {
+			add_filter('render_block', array($this, 'inject_around_query_block'), 10, 2);
 		} else {
-			add_action( 'get_header', array( $this, 'register_loop_hooks' ) );
+			add_action('get_header', array($this, 'register_loop_hooks'));
 		}
 	}
 
@@ -77,9 +80,10 @@ class KCAS_Frontend {
 	 * Register loop hooks after get_header so sections can never appear
 	 * before the page header (classic themes only).
 	 */
-	public function register_loop_hooks() {
-		add_action( 'loop_start', array( $this, 'maybe_output_sections_before' ) );
-		add_action( 'loop_end',   array( $this, 'maybe_output_sections_after' ) );
+	public function register_loop_hooks()
+	{
+		add_action('loop_start', array($this, 'maybe_output_sections_before'));
+		add_action('loop_end',   array($this, 'maybe_output_sections_after'));
 	}
 
 	/**
@@ -87,14 +91,15 @@ class KCAS_Frontend {
 	 *
 	 * @param WP_Query $query
 	 */
-	public function maybe_output_sections_before( $query ) {
-		if ( ! $query->is_main_query() || is_admin() ) {
+	public function maybe_output_sections_before($query)
+	{
+		if (! $query->is_main_query() || is_admin()) {
 			return;
 		}
 
-		foreach ( $this->resolve_locations() as $loc ) {
+		foreach ($this->resolve_locations() as $loc) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			echo $this->get_sections_html( $loc['location'], 'before', $loc['extra'] );
+			echo $this->get_sections_html($loc['location'], 'before', $loc['extra']);
 		}
 	}
 
@@ -103,14 +108,15 @@ class KCAS_Frontend {
 	 *
 	 * @param WP_Query $query
 	 */
-	public function maybe_output_sections_after( $query ) {
-		if ( ! $query->is_main_query() || is_admin() ) {
+	public function maybe_output_sections_after($query)
+	{
+		if (! $query->is_main_query() || is_admin()) {
 			return;
 		}
 
-		foreach ( $this->resolve_locations() as $loc ) {
+		foreach ($this->resolve_locations() as $loc) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			echo $this->get_sections_html( $loc['location'], 'after', $loc['extra'] );
+			echo $this->get_sections_html($loc['location'], 'after', $loc['extra']);
 		}
 	}
 
@@ -125,30 +131,31 @@ class KCAS_Frontend {
 	 * @param array  $block         Parsed block data.
 	 * @return string
 	 */
-	public function inject_around_query_block( $block_content, $block ) {
-		if ( 'core/query' !== $block['blockName'] ) {
+	public function inject_around_query_block($block_content, $block)
+	{
+		if ('core/query' !== $block['blockName']) {
 			return $block_content;
 		}
 
 		// Only wrap Query blocks that inherit the main archive query.
-		if ( empty( $block['attrs']['query']['inherit'] ) ) {
+		if (empty($block['attrs']['query']['inherit'])) {
 			return $block_content;
 		}
 
 		$locations = $this->resolve_locations();
-		if ( empty( $locations ) ) {
+		if (empty($locations)) {
 			return $block_content;
 		}
 
 		$before = '';
 		$after  = '';
 
-		foreach ( $locations as $loc ) {
-			$before .= $this->get_sections_html( $loc['location'], 'before', $loc['extra'] );
-			$after  .= $this->get_sections_html( $loc['location'], 'after',  $loc['extra'] );
+		foreach ($locations as $loc) {
+			$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
+			$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
 		}
 
-		if ( ! $before && ! $after ) {
+		if (! $before && ! $after) {
 			return $block_content;
 		}
 
@@ -168,35 +175,40 @@ class KCAS_Frontend {
 	 *
 	 * @return array
 	 */
-	private function resolve_locations() {
-		if ( is_home() ) {
-			return array( array( 'location' => 'blog_index', 'extra' => '' ) );
+	private function resolve_locations()
+	{
+		if (is_home()) {
+			return array(array('location' => 'blog_index', 'extra' => ''));
 		}
 
-		if ( is_category() ) {
+		if (is_category()) {
 			$cat_id = (int) get_queried_object_id();
 			return array(
 				// Sections assigned to ALL category archives.
-				array( 'location' => 'category_archives',   'extra' => '' ),
+				array('location' => 'category_archives',   'extra' => ''),
 				// Sections assigned to SPECIFIC categories (filtered by cat ID).
-				array( 'location' => 'specific_categories', 'extra' => (string) $cat_id ),
+				array('location' => 'specific_categories', 'extra' => (string) $cat_id),
 			);
 		}
 
-		if ( is_tag() ) {
-			return array( array( 'location' => 'tag_archives', 'extra' => '' ) );
+		if (is_single()) {
+			return array(array('location' => 'single_post', 'extra' => ''));
 		}
 
-		if ( is_author() ) {
-			return array( array( 'location' => 'author_archives', 'extra' => '' ) );
+		if (is_tag()) {
+			return array(array('location' => 'tag_archives', 'extra' => ''));
 		}
 
-		if ( is_search() ) {
-			return array( array( 'location' => 'search_results', 'extra' => '' ) );
+		if (is_author()) {
+			return array(array('location' => 'author_archives', 'extra' => ''));
 		}
 
-		if ( is_date() ) {
-			return array( array( 'location' => 'date_archives', 'extra' => '' ) );
+		if (is_search()) {
+			return array(array('location' => 'search_results', 'extra' => ''));
+		}
+
+		if (is_date()) {
+			return array(array('location' => 'date_archives', 'extra' => ''));
 		}
 
 		return array();
@@ -219,96 +231,103 @@ class KCAS_Frontend {
 	 * @param string $extra    Extra cache-key context (e.g. category ID).
 	 * @return string HTML string, or empty string if nothing to show.
 	 */
-	public function get_sections_html( $location, $position, $extra = '' ) {
+	public function get_sections_html($location, $position, $extra = '')
+	{
 		$allowed_locations = array(
-			'blog_index', 'category_archives', 'specific_categories',
-			'tag_archives', 'author_archives', 'search_results', 'date_archives',
+			'blog_index',
+			'category_archives',
+			'specific_categories',
+			'single_post',
+			'tag_archives',
+			'author_archives',
+			'search_results',
+			'date_archives',
 		);
-		$allowed_positions = array( 'before', 'after' );
+		$allowed_positions = array('before', 'after');
 
 		if (
-			! in_array( $location, $allowed_locations, true ) ||
-			! in_array( $position, $allowed_positions, true )
+			! in_array($location, $allowed_locations, true) ||
+			! in_array($position, $allowed_positions, true)
 		) {
 			return '';
 		}
 
 		// ── Cache check (feature 3a) ──────────────────────────────────────────
-		$cached = KCAS_Cache::get( $location, $position, $extra );
-		if ( false !== $cached ) {
+		$cached = KCAS_Cache::get($location, $position, $extra);
+		if (false !== $cached) {
 			return $cached;
 		}
 
 		// ── Developer hook: allow query arg modification (feature 5) ─────────
 		$query_args = apply_filters(
 			'kcas_query_args',
-			$this->build_query_args( $location, $position ),
+			$this->build_query_args($location, $position),
 			$location,
 			$position
 		);
 
-		$sections_query = new WP_Query( $query_args );
+		$sections_query = new WP_Query($query_args);
 
-		if ( ! $sections_query->have_posts() ) {
+		if (! $sections_query->have_posts()) {
 			// Cache the empty result too, to avoid repeated DB hits.
-			KCAS_Cache::set( $location, $position, '', $extra );
+			KCAS_Cache::set($location, $position, '', $extra);
 			return '';
 		}
 
 		// ── Developer action: fires before any sections HTML (feature 5) ─────
 		ob_start();
-		do_action( 'kcas_before_sections', $location, $position );
+		do_action('kcas_before_sections', $location, $position);
 		$before_action = ob_get_clean();
 
 		$inner = '';
 
-		while ( $sections_query->have_posts() ) {
+		while ($sections_query->have_posts()) {
 			$sections_query->the_post();
 			$post_id = get_the_ID();
 
 			// ── Visibility check (feature 1e) ─────────────────────────────────
-			if ( ! $this->passes_visibility_check( $post_id ) ) {
+			if (! $this->passes_visibility_check($post_id)) {
 				continue;
 			}
 
 			// ── Build section content ─────────────────────────────────────────
 			$content = get_the_content();
-			$content = apply_filters( 'the_content', $content ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally applying the core WP content filter
-			$content = str_replace( ']]>', ']]&gt;', $content );
+			$content = apply_filters('the_content', $content); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally applying the core WP content filter
+			$content = str_replace(']]>', ']]&gt;', $content);
 
-			$section_html = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr( $post_id ) . '">';
+			$section_html = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr($post_id) . '">';
 			$section_html .= $content;
 			$section_html .= '</section>';
 
 			// ── Developer filter: per-section HTML (feature 5) ────────────────
-			$section_html = apply_filters( 'kcas_section_html', $section_html, $post_id, $location, $position );
+			$section_html = apply_filters('kcas_section_html', $section_html, $post_id, $location, $position);
 
 			$inner .= $section_html;
 		}
 
 		wp_reset_postdata();
 
-		if ( '' === $inner ) {
-			KCAS_Cache::set( $location, $position, '', $extra );
+		if ('' === $inner) {
+			KCAS_Cache::set($location, $position, '', $extra);
 			return '';
 		}
 
-		$wrapper = '<div class="kcas-archive-sections kcas-archive-sections--' . esc_attr( $position ) . '">';
+		$wrapper = '<div class="kcas-archive-sections kcas-archive-sections--' . esc_attr($position) . '">';
 		$wrapper .= $inner;
 		$wrapper .= '</div>';
 
 		// ── Developer action: fires after sections HTML (feature 5) ──────────
 		ob_start();
-		do_action( 'kcas_after_sections', $location, $position );
+		do_action('kcas_after_sections', $location, $position);
 		$after_action = ob_get_clean();
 
 		$html = $before_action . $wrapper . $after_action;
 
 		// ── Developer filter: full output (feature 5) ─────────────────────────
-		$html = apply_filters( 'kcas_sections_html', $html, $location, $position );
+		$html = apply_filters('kcas_sections_html', $html, $location, $position);
 
 		// ── Store in cache (feature 3a) ───────────────────────────────────────
-		KCAS_Cache::set( $location, $position, $html, $extra );
+		KCAS_Cache::set($location, $position, $html, $extra);
 
 		return $html;
 	}
@@ -329,7 +348,8 @@ class KCAS_Frontend {
 	 * @param string $position
 	 * @return array
 	 */
-	private function build_query_args( $location, $position ) {
+	private function build_query_args($location, $position)
+	{
 		$meta_query = array(
 			'relation' => 'AND',
 			array(
@@ -370,26 +390,27 @@ class KCAS_Frontend {
 	 * @param int $post_id Section post ID (current post in the loop).
 	 * @return bool True if the section should be displayed.
 	 */
-	private function passes_visibility_check( $post_id ) {
+	private function passes_visibility_check($post_id)
+	{
 		// ── Login-state check (feature 1e) ────────────────────────────────────
-		$visibility = get_post_meta( $post_id, $this->meta_visibility, true );
+		$visibility = get_post_meta($post_id, $this->meta_visibility, true);
 
-		if ( 'logged_in' === $visibility && ! is_user_logged_in() ) {
+		if ('logged_in' === $visibility && ! is_user_logged_in()) {
 			return false;
 		}
 
-		if ( 'logged_out' === $visibility && is_user_logged_in() ) {
+		if ('logged_out' === $visibility && is_user_logged_in()) {
 			return false;
 		}
 
 		// ── Specific-category check ───────────────────────────────────────────
-		$location = get_post_meta( $post_id, $this->meta_location, true );
+		$location = get_post_meta($post_id, $this->meta_location, true);
 
-		if ( 'specific_categories' === $location && is_category() ) {
-			$saved_cats  = get_post_meta( $post_id, $this->meta_categories, true );
+		if ('specific_categories' === $location && is_category()) {
+			$saved_cats  = get_post_meta($post_id, $this->meta_categories, true);
 			$current_cat = (int) get_queried_object_id();
 
-			if ( ! is_array( $saved_cats ) || ! in_array( $current_cat, array_map( 'intval', $saved_cats ), true ) ) {
+			if (! is_array($saved_cats) || ! in_array($current_cat, array_map('intval', $saved_cats), true)) {
 				return false;
 			}
 		}
