@@ -1,6 +1,5 @@
 === Kayce Custom Archive Sections ===
 Contributors: wpkayce
-Donate link: https://wpkayce.com
 Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 6.9
