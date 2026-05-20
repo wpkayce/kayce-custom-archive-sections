@@ -1,102 +1,436 @@
 /**
  * Admin styles for Kayce Custom Archive Sections.
- * Loaded only on the Archive Section CPT edit screen.
+ * Loaded only on the Archive Section CPT edit / list screens.
  */
 
-/* ── Meta box field groups ──────────────────────────────────────────────── */
+/* ── Shared reset ──────────────────────────────────────────────────────────── */
 
-.kcas-field-group {
-	margin-bottom: 14px;
-	padding: 10px 12px;
-	background: #f6f7f7;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
+.kcas-section input[type="radio"],
+.kcas-section input[type="checkbox"] {
+	/* Hide native inputs — replaced by custom UI */
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+	pointer-events: none;
 }
 
-.kcas-field-title {
-	font-weight: 600;
-	margin: 0 0 3px;
-	font-size: 12px;
-	text-transform: uppercase;
-	letter-spacing: 0.03em;
-	color: #3c434a;
+/* ── Section wrappers ──────────────────────────────────────────────────────── */
+
+.kcas-section {
+	padding: 12px 0;
 }
 
-.kcas-meta-help {
-	margin: 0 0 8px;
-	font-size: 11px;
-	color: #646970;
-}
-
-/* ── Radio / checkbox options ───────────────────────────────────────────── */
-
-.kcas-inline-options label {
-	display: block;
-	margin: 4px 0;
-	font-size: 13px;
-	cursor: pointer;
-}
-
-.kcas-inline-options label:hover {
-	color: #2271b1;
-}
-
-/* ── Active toggle ──────────────────────────────────────────────────────── */
-
-.kcas-active-label {
+.kcas-section-label {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	font-size: 13px;
-	cursor: pointer;
+	gap: 5px;
+	margin: 0 0 8px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #8c8f94;
 }
 
-.kcas-active-label input[type="checkbox"] {
+.kcas-section-label .dashicons {
+	font-size: 13px;
+	width: 13px;
+	height: 13px;
+	color: #a7aaad;
+}
+
+/* ── Divider ───────────────────────────────────────────────────────────────── */
+
+.kcas-divider {
+	border: 0;
+	border-top: 1px solid #f0f0f1;
 	margin: 0;
 }
 
-/* ── Category list ──────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Toggle switch                                                               */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-section--active {
+	padding: 14px 0 10px;
+}
+
+.kcas-toggle {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	user-select: none;
+}
+
+/* Track */
+.kcas-toggle-track {
+	position: relative;
+	flex-shrink: 0;
+	width: 36px;
+	height: 20px;
+	background: #c3c4c7;
+	border-radius: 10px;
+	transition: background 0.18s ease;
+}
+
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-track {
+	background: #00a32a;
+}
+
+.kcas-toggle:hover .kcas-toggle-track {
+	background: #a7aaad;
+}
+
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-track:hover,
+.kcas-toggle:hover input[type="checkbox"]:checked ~ .kcas-toggle-track {
+	background: #00871f;
+}
+
+/* Focus ring for accessibility */
+.kcas-toggle input[type="checkbox"]:focus-visible ~ .kcas-toggle-track {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* Thumb */
+.kcas-toggle-thumb {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 14px;
+	height: 14px;
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 2px rgba(0,0,0,.25);
+	transition: transform 0.18s ease;
+}
+
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-track .kcas-toggle-thumb {
+	transform: translateX(16px);
+}
+
+/* Label text */
+.kcas-toggle-label {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 4px;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.kcas-toggle-on,
+.kcas-toggle-off {
+	font-weight: 600;
+}
+
+/* Visibility controlled by checkbox state */
+.kcas-toggle-on,
+.kcas-toggle-hint {
+	display: none;
+}
+
+.kcas-toggle-off,
+.kcas-toggle-hint--off {
+	display: inline;
+}
+
+.kcas-toggle-hint,
+.kcas-toggle-hint--off {
+	font-size: 11px;
+	color: #8c8f94;
+	font-weight: 400;
+}
+
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-label .kcas-toggle-on,
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-label .kcas-toggle-hint {
+	display: inline;
+}
+
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-label .kcas-toggle-off,
+.kcas-toggle input[type="checkbox"]:checked ~ .kcas-toggle-label .kcas-toggle-hint--off {
+	display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Location card grid                                                          */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-location-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px;
+}
+
+.kcas-location-card {
+	display: block;
+	cursor: pointer;
+	border-radius: 5px;
+	border: 1.5px solid #dcdcde;
+	background: #fff;
+	transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+.kcas-location-card:hover {
+	border-color: #2271b1;
+	background: #f6f9fc;
+}
+
+.kcas-location-card.is-selected {
+	border-color: #2271b1;
+	background: #f0f6fc;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.kcas-card-body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 8px 4px 7px;
+	text-align: center;
+}
+
+.kcas-card-body .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	color: #8c8f94;
+	transition: color 0.12s;
+}
+
+.kcas-location-card:hover .kcas-card-body .dashicons,
+.kcas-location-card.is-selected .kcas-card-body .dashicons {
+	color: #2271b1;
+}
+
+.kcas-card-label {
+	font-size: 11px;
+	line-height: 1.3;
+	color: #3c434a;
+	font-weight: 500;
+}
+
+.kcas-location-card.is-selected .kcas-card-label {
+	color: #2271b1;
+	font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Segmented button groups (Position + Visibility)                             */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-btn-group {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	border-radius: 5px;
+	border: 1.5px solid #dcdcde;
+	overflow: hidden;
+}
+
+.kcas-btn-group--3 {
+	grid-template-columns: 1fr 1fr 1fr;
+}
+
+.kcas-btn-option {
+	display: block;
+	cursor: pointer;
+	background: #fff;
+	transition: background 0.1s, color 0.1s;
+}
+
+.kcas-btn-option + .kcas-btn-option {
+	border-left: 1px solid #dcdcde;
+}
+
+.kcas-btn-option span {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	padding: 7px 4px;
+	font-size: 11.5px;
+	font-weight: 500;
+	color: #3c434a;
+	text-align: center;
+	line-height: 1.3;
+	white-space: nowrap;
+}
+
+.kcas-btn-option span .dashicons {
+	font-size: 13px;
+	width: 13px;
+	height: 13px;
+	flex-shrink: 0;
+}
+
+.kcas-btn-option:hover span {
+	background: #f6f7f7;
+	color: #2271b1;
+}
+
+.kcas-btn-option.is-selected {
+	background: #2271b1;
+}
+
+.kcas-btn-option.is-selected span {
+	color: #fff;
+}
+
+.kcas-btn-option.is-selected:hover span {
+	background: transparent;
+	color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Category search                                                             */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-cat-search-wrap {
+	position: relative;
+	margin-bottom: 6px;
+}
+
+.kcas-cat-search-icon {
+	position: absolute;
+	top: 50%;
+	left: 7px;
+	transform: translateY(-50%);
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	color: #a7aaad;
+	pointer-events: none;
+}
+
+.kcas-cat-search {
+	width: 100%;
+	padding: 5px 8px 5px 26px;
+	font-size: 12px;
+	box-sizing: border-box;
+	border: 1.5px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+	color: #1d2327;
+	line-height: 1.4;
+}
+
+.kcas-cat-search:focus {
+	border-color: #2271b1;
+	outline: none;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* ── Category list ───────────────────────────────────────────────────────── */
 
 .kcas-category-list {
 	max-height: 160px;
 	overflow-y: auto;
-	border: 1px solid #dcdcde;
-	border-radius: 3px;
+	border: 1.5px solid #dcdcde;
+	border-radius: 4px;
 	background: #fff;
-	padding: 6px 8px;
+	padding: 4px 2px;
 }
 
-.kcas-category-list label {
+.kcas-cat-item {
 	display: flex;
 	align-items: center;
-	gap: 5px;
-	padding: 2px 0;
-	font-size: 12px;
+	gap: 6px;
+	padding: 4px 6px;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.kcas-cat-item:hover {
+	background: #f6f9fc;
+}
+
+.kcas-cat-item.is-checked {
+	background: #f0f6fc;
+}
+
+/* Show the native checkbox inside the list (it drives state) */
+.kcas-cat-item input[type="checkbox"] {
+	position: static;
+	opacity: 1;
+	width: auto;
+	height: auto;
+	pointer-events: auto;
+	flex-shrink: 0;
+	margin: 0;
 	cursor: pointer;
 }
 
-.kcas-category-list label:hover {
-	color: #2271b1;
+.kcas-cat-name {
+	flex: 1;
+	font-size: 12px;
+	color: #1d2327;
 }
 
 .kcas-cat-count {
+	font-size: 10px;
+	color: #a7aaad;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	padding: 1px 5px;
+	flex-shrink: 0;
+}
+
+/* ── Empty note ──────────────────────────────────────────────────────────── */
+
+.kcas-empty-note {
+	margin: 4px 0 0;
+	font-size: 12px;
 	color: #8c8f94;
-	font-size: 11px;
+	font-style: italic;
 }
 
-/* ── Preview link group ─────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Preview button                                                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
-.kcas-preview-group {
-	text-align: center;
+.kcas-section--preview {
+	padding-top: 10px;
 }
 
-.kcas-preview-group .button {
+.kcas-preview-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
 	width: 100%;
-	text-align: center;
+	padding: 7px 12px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #2271b1;
+	background: #f6f9fc;
+	border: 1.5px solid #b3d1ed;
+	border-radius: 5px;
+	text-decoration: none;
 	box-sizing: border-box;
+	transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 
-/* ── List table columns ─────────────────────────────────────────────────── */
+.kcas-preview-btn:hover {
+	background: #2271b1;
+	color: #fff;
+	border-color: #2271b1;
+	text-decoration: none;
+}
+
+.kcas-preview-btn .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* List table columns                                                          */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 .column-kcas_active,
 .column-kcas_position,
@@ -134,25 +468,9 @@
 	font-style: italic;
 }
 
-/* ── Category search input (#15) ────────────────────────────────────────── */
-
-.kcas-cat-search {
-	width: 100%;
-	margin-bottom: 6px;
-	padding: 4px 6px;
-	font-size: 12px;
-	box-sizing: border-box;
-	border: 1px solid #dcdcde;
-	border-radius: 3px;
-}
-
-.kcas-cat-search:focus {
-	border-color: #2271b1;
-	outline: none;
-	box-shadow: 0 0 0 1px #2271b1;
-}
-
-/* ── Quick Edit fields (#16) ────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Quick Edit fields                                                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 .kcas-quick-edit-fields h4 {
 	font-size: 13px;
@@ -187,4 +505,14 @@
 	margin-bottom: 10px;
 	font-size: 13px;
 	cursor: pointer;
+}
+
+/* Re-expose the checkbox inside quick edit (not hidden like meta-box radios) */
+.kcas-qe-active-label input[type="checkbox"] {
+	position: static;
+	opacity: 1;
+	width: auto;
+	height: auto;
+	pointer-events: auto;
+	margin: 0;
 }
