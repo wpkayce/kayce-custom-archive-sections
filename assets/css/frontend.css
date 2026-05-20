@@ -1,0 +1,32 @@
+/**
+ * Frontend styles for Kayce Custom Archive Sections.
+ *
+ * Provides minimal, non-opinionated spacing so sections sit naturally
+ * within any theme layout without overriding theme design decisions.
+ * All rules use low-specificity selectors so theme CSS always wins.
+ */
+
+/* ── Outer wrapper (before / after variants) ────────────────────────────── */
+
+.kcas-archive-sections {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.kcas-archive-sections--before {
+	margin-bottom: 2em;
+}
+
+.kcas-archive-sections--after {
+	margin-top: 2em;
+}
+
+/* ── Individual section ─────────────────────────────────────────────────── */
+
+.kcas-archive-section {
+	box-sizing: border-box;
+}
+
+.kcas-archive-section + .kcas-archive-section {
+	margin-top: 1.5em;
+}

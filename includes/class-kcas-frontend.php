@@ -65,11 +65,31 @@ class KCAS_Frontend
 			return;
 		}
 
+		add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
+
 		if (wp_is_block_theme()) {
 			add_filter('render_block', array($this, 'inject_around_query_block'), 10, 2);
 		} else {
 			add_action('get_header', array($this, 'register_loop_hooks'));
 		}
+	}
+
+	/**
+	 * Enqueue the minimal frontend stylesheet.
+	 * Only loaded on archive/singular pages where sections can appear.
+	 */
+	public function enqueue_frontend_assets()
+	{
+		if (! is_home() && ! is_category() && ! is_tag() && ! is_author() && ! is_search() && ! is_date() && ! is_single()) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'kcas-frontend',
+			KCAS_PLUGIN_URL . 'assets/css/frontend.css',
+			array(),
+			KCAS_PLUGIN_VERSION
+		);
 	}
 
 	// =========================================================================
@@ -142,6 +162,13 @@ class KCAS_Frontend
 			return $block_content;
 		}
 
+		// Prevent injecting sections more than once per page load — some FSE themes
+		// place multiple core/query blocks with inherit:true on the same archive page.
+		static $injected = false;
+		if ($injected) {
+			return $block_content;
+		}
+
 		$locations = $this->resolve_locations();
 		if (empty($locations)) {
 			return $block_content;
@@ -159,6 +186,7 @@ class KCAS_Frontend
 			return $block_content;
 		}
 
+		$injected = true;
 		return $before . $block_content . $after;
 	}
 
