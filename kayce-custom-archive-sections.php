@@ -35,8 +35,36 @@ function kcas_activate()
 	$cpt = new KCAS_CPT('kcas_section');
 	$cpt->register_archive_section_cpt();
 	flush_rewrite_rules();
+
+	// Flag to show the welcome admin notice on first activation.
+	set_transient('kcas_activation_notice', true, 30);
 }
 register_activation_hook(__FILE__, 'kcas_activate');
+
+/**
+ * Show a one-time welcome notice after plugin activation.
+ */
+function kcas_activation_notice()
+{
+	if (! get_transient('kcas_activation_notice')) {
+		return;
+	}
+	delete_transient('kcas_activation_notice');
+
+	$add_new_url = admin_url('post-new.php?post_type=kcas_section');
+	?>
+	<div class="notice notice-success is-dismissible">
+		<p>
+			<strong><?php esc_html_e('Kayce Custom Archive Sections is active!', 'kayce-custom-archive-sections'); ?></strong>
+			<?php esc_html_e('Ready to add content to your archive pages.', 'kayce-custom-archive-sections'); ?>
+			&nbsp;<a href="<?php echo esc_url($add_new_url); ?>" class="button button-primary button-small">
+				<?php esc_html_e('Create your first section →', 'kayce-custom-archive-sections'); ?>
+			</a>
+		</p>
+	</div>
+	<?php
+}
+add_action('admin_notices', 'kcas_activation_notice');
 
 /**
  * Flush rewrite rules on deactivation for a clean slate.
