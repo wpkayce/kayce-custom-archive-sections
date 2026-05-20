@@ -14,10 +14,18 @@
 }
 
 .kcas-archive-sections--before_content {
-	/* Sits between the site header and the page content area.
-	   No top margin — the theme's header already provides separation.
-	   Bottom margin pushes the content area down naturally. */
-	margin-bottom: 0;
+	/* Sits between the archive header and the posts area.
+	   Spans all columns if accidentally rendered inside a CSS-Grid or
+	   multi-column posts container before the JS repositioner fires. */
+	grid-column: 1 / -1;
+	-ms-grid-column-span: 99; /* IE fallback */
+	column-span: all;
+	float: none !important;
+	clear: both;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin-bottom: 1.5em;
 }
 
 .kcas-archive-sections--before {

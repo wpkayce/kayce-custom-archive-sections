@@ -91,6 +91,17 @@ class KCAS_Frontend
 			array(),
 			KCAS_PLUGIN_VERSION
 		);
+
+		// Repositioning script for 'before_content' sections on themes that
+		// don't provide an 'after header' action hook. Runs before first paint
+		// so the section moves before the user sees the wrong position.
+		wp_enqueue_script(
+			'kcas-frontend',
+			KCAS_PLUGIN_URL . 'assets/js/frontend.js',
+			array(),
+			KCAS_PLUGIN_VERSION,
+			array( 'strategy' => 'defer' )
+		);
 	}
 
 	// =========================================================================
@@ -149,14 +160,20 @@ class KCAS_Frontend
 
 		// ── Theme-specific "after header" hooks ───────────────────────────────
 		$theme_hooks = array(
-			'astra_header_after',         // Astra
-			'genesis_after_header',       // Genesis Framework
-			'ocean_after_header',         // OceanWP
-			'kadence_after_header',       // Kadence
-			'neve_after_header_wrapper',  // Neve
-			'storefront_after_header',    // WooCommerce Storefront
-			'hestia_after_header',        // Hestia
-			'bimber_site_after_header',   // Bimber
+			'astra_header_after',              // Astra
+			'genesis_after_header',            // Genesis Framework
+			'ocean_after_header',              // OceanWP
+			'kadence_after_header',            // Kadence
+			'neve_after_header_wrapper',       // Neve
+			'storefront_after_header',         // WooCommerce Storefront
+			'hestia_after_header',             // Hestia
+			'bimber_site_after_header',        // Bimber
+			'colormag_before_primary_content', // ColorMag (ThemeGrill)
+			'tg_before_primary',               // ThemeGrill family fallback
+			'blocksy:header:after',            // Blocksy
+			'hello_elementor_after_header',    // Hello Elementor
+			'divi_after_header',               // Divi
+			'enfold_after_header',             // Enfold
 		);
 
 		foreach ($theme_hooks as $hook) {
