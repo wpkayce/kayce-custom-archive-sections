@@ -231,7 +231,17 @@
 }
 
 .kcas-btn-group--3 {
-	grid-template-columns: 1fr 1fr 1fr;
+	grid-template-columns: 1fr;
+}
+
+.kcas-btn-group--3 .kcas-btn-option + .kcas-btn-option {
+	border-left: none;
+	border-top: 1px solid #dcdcde;
+}
+
+.kcas-btn-group--3 .kcas-btn-option span {
+	justify-content: flex-start;
+	padding: 8px 10px;
 }
 
 .kcas-btn-option {
