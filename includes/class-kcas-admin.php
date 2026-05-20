@@ -90,6 +90,9 @@ class KCAS_Admin
 		// Row actions — Duplicate.
 		add_filter('post_row_actions', array($this, 'add_row_actions'), 10, 2);
 		add_action('admin_post_kcas_duplicate_section', array($this, 'handle_duplicate'));
+
+		// Empty state.
+		add_action('admin_footer-edit.php', array($this, 'render_empty_state'));
 	}
 
 	// =========================================================================
@@ -646,5 +649,71 @@ class KCAS_Admin
 		// Send to the new draft's edit screen.
 		wp_safe_redirect(admin_url('post.php?action=edit&post=' . $new_id));
 		exit;
+	}
+
+	// =========================================================================
+	// Empty State
+	// =========================================================================
+
+	/**
+	 * Render a friendly empty-state card when no sections exist yet.
+	 * Injected via admin_footer-edit.php and shown via JS only when the
+	 * default "No posts found" row is present.
+	 */
+	public function render_empty_state()
+	{
+		$screen = get_current_screen();
+		if (! $screen || $screen->post_type !== $this->post_type) {
+			return;
+		}
+
+		$add_new_url = admin_url('post-new.php?post_type=' . $this->post_type);
+		?>
+		<style>
+			#kcas-empty-state {
+				display: none;
+				text-align: center;
+				padding: 48px 24px;
+				background: #fff;
+				border: 1px solid #dcdcde;
+				border-radius: 4px;
+				margin-top: 12px;
+			}
+			#kcas-empty-state .kcas-empty-icon {
+				font-size: 48px;
+				line-height: 1;
+				margin-bottom: 12px;
+			}
+			#kcas-empty-state h2 {
+				font-size: 20px;
+				font-weight: 600;
+				margin: 0 0 8px;
+				color: #1d2327;
+			}
+			#kcas-empty-state p {
+				color: #646970;
+				font-size: 14px;
+				margin: 0 0 20px;
+			}
+		</style>
+		<div id="kcas-empty-state">
+			<div class="kcas-empty-icon">&#9741;</div>
+			<h2><?php esc_html_e('No archive sections yet', 'kayce-custom-archive-sections'); ?></h2>
+			<p><?php esc_html_e('Create your first section and choose where it should appear on your archive pages.', 'kayce-custom-archive-sections'); ?></p>
+			<a href="<?php echo esc_url($add_new_url); ?>" class="button button-primary button-large">
+				<?php esc_html_e('Create your first section', 'kayce-custom-archive-sections'); ?>
+			</a>
+		</div>
+		<script>
+			(function () {
+				var noItems = document.querySelector('#the-list .no-items');
+				var emptyState = document.getElementById('kcas-empty-state');
+				if (noItems && emptyState) {
+					noItems.closest('table').style.display = 'none';
+					emptyState.style.display = 'block';
+				}
+			}());
+		</script>
+		<?php
 	}
 }
