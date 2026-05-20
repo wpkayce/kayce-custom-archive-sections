@@ -90,6 +90,18 @@ class KCAS_Admin
 		// Row actions — Duplicate.
 		add_filter('post_row_actions', array($this, 'add_row_actions'), 10, 2);
 		add_action('admin_post_kcas_duplicate_section', array($this, 'handle_duplicate'));
+
+		// Quick Edit.
+		add_action('quick_edit_custom_box', array($this, 'render_quick_edit_fields'), 10, 2);
+
+		// Bulk actions.
+		add_filter('bulk_actions-edit-' . $this->post_type,        array($this, 'add_bulk_actions'));
+		add_filter('handle_bulk_actions-edit-' . $this->post_type, array($this, 'handle_bulk_actions'), 10, 3);
+		add_action('admin_notices', array($this, 'bulk_action_notice'));
+
+		// Sortable columns.
+		add_filter('manage_edit-' . $this->post_type . '_sortable_columns', array($this, 'register_sortable_columns'));
+		add_action('pre_get_posts', array($this, 'handle_column_orderby'));
 	}
 
 	// =========================================================================
@@ -229,6 +241,13 @@ class KCAS_Admin
 			</p>
 
 			<?php if (! empty($all_cats)) : ?>
+				<input
+					type="text"
+					id="kcas-cat-search"
+					class="kcas-cat-search"
+					placeholder="<?php esc_attr_e('Filter categories…', 'kayce-custom-archive-sections'); ?>"
+					autocomplete="off"
+				/>
 				<div class="kcas-category-list">
 					<?php foreach ($all_cats as $cat) : ?>
 						<label>
@@ -359,11 +378,16 @@ class KCAS_Admin
 	 */
 	public function save_meta($post_id, $post)
 	{
-		if (! isset($_POST['kcas_meta_nonce'])) {
-			return;
-		}
-
-		if (! wp_verify_nonce(sanitize_key($_POST['kcas_meta_nonce']), 'kcas_save_meta')) {
+		// Accept either the full meta box nonce or the Quick Edit nonce.
+		if (isset($_POST['kcas_meta_nonce'])) {
+			if (! wp_verify_nonce(sanitize_key($_POST['kcas_meta_nonce']), 'kcas_save_meta')) {
+				return;
+			}
+		} elseif (isset($_POST['kcas_quick_edit_nonce'])) {
+			if (! wp_verify_nonce(sanitize_key($_POST['kcas_quick_edit_nonce']), 'kcas_quick_edit')) {
+				return;
+			}
+		} else {
 			return;
 		}
 
@@ -470,7 +494,15 @@ class KCAS_Admin
 		switch ($column) {
 
 			case 'kcas_active':
-				$active = get_post_meta($post_id, $this->meta_active, true);
+				$active     = get_post_meta($post_id, $this->meta_active,     true);
+				$position   = get_post_meta($post_id, $this->meta_position,   true);
+				$visibility = get_post_meta($post_id, $this->meta_visibility, true);
+				// Hidden spans for Quick Edit JS population.
+				echo '<span class="kcas-qe-data" style="display:none;"'
+					. ' data-active="'     . esc_attr('' === $active     ? '1'       : $active)     . '"'
+					. ' data-position="'   . esc_attr('' === $position   ? 'before'  : $position)   . '"'
+					. ' data-visibility="' . esc_attr('' === $visibility ? 'all'     : $visibility) . '"'
+					. '></span>';
 				if ('1' === $active || '' === $active) {
 					echo '<span class="kcas-badge kcas-badge--active" title="' . esc_attr__('Active', 'kayce-custom-archive-sections') . '">&#10003; ' . esc_html__('Yes', 'kayce-custom-archive-sections') . '</span>';
 				} else {
@@ -646,5 +678,189 @@ class KCAS_Admin
 		// Send to the new draft's edit screen.
 		wp_safe_redirect(admin_url('post.php?action=edit&post=' . $new_id));
 		exit;
+	}
+
+	// =========================================================================
+	// Quick Edit (#16)
+	// =========================================================================
+
+	/**
+	 * Render the Quick Edit fields for our CPT.
+	 * Only outputs HTML once — triggered by the 'kcas_active' column.
+	 *
+	 * @param string $column_name
+	 * @param string $post_type
+	 */
+	public function render_quick_edit_fields($column_name, $post_type)
+	{
+		if ($post_type !== $this->post_type || 'kcas_active' !== $column_name) {
+			return;
+		}
+		?>
+		<fieldset class="inline-edit-col-right kcas-quick-edit-fields">
+			<div class="inline-edit-col">
+				<h4><?php esc_html_e('Archive Section Settings', 'kayce-custom-archive-sections'); ?></h4>
+				<?php wp_nonce_field('kcas_quick_edit', 'kcas_quick_edit_nonce'); ?>
+
+				<label class="kcas-qe-active-label">
+					<input type="checkbox" name="kcas_active" value="1" />
+					<span><?php esc_html_e('Active (display this section)', 'kayce-custom-archive-sections'); ?></span>
+				</label>
+
+				<label>
+					<span class="title"><?php esc_html_e('Position', 'kayce-custom-archive-sections'); ?></span>
+					<select name="kcas_position">
+						<option value="before"><?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?></option>
+						<option value="after"><?php esc_html_e('After posts', 'kayce-custom-archive-sections'); ?></option>
+					</select>
+				</label>
+
+				<label>
+					<span class="title"><?php esc_html_e('Show to', 'kayce-custom-archive-sections'); ?></span>
+					<select name="kcas_visibility">
+						<option value="all"><?php esc_html_e('Everyone', 'kayce-custom-archive-sections'); ?></option>
+						<option value="logged_in"><?php esc_html_e('Logged-in users only', 'kayce-custom-archive-sections'); ?></option>
+						<option value="logged_out"><?php esc_html_e('Logged-out visitors only', 'kayce-custom-archive-sections'); ?></option>
+					</select>
+				</label>
+			</div>
+		</fieldset>
+		<?php
+	}
+
+	// =========================================================================
+	// Bulk Actions (#17)
+	// =========================================================================
+
+	/**
+	 * Register "Activate" and "Deactivate" bulk actions.
+	 *
+	 * @param array $actions
+	 * @return array
+	 */
+	public function add_bulk_actions($actions)
+	{
+		$actions['kcas_activate']   = __('Activate',   'kayce-custom-archive-sections');
+		$actions['kcas_deactivate'] = __('Deactivate', 'kayce-custom-archive-sections');
+		return $actions;
+	}
+
+	/**
+	 * Handle the Activate / Deactivate bulk actions.
+	 *
+	 * @param string $redirect_to
+	 * @param string $action
+	 * @param int[]  $post_ids
+	 * @return string
+	 */
+	public function handle_bulk_actions($redirect_to, $action, $post_ids)
+	{
+		if (! in_array($action, array('kcas_activate', 'kcas_deactivate'), true)) {
+			return $redirect_to;
+		}
+
+		$value = ('kcas_activate' === $action) ? '1' : '0';
+		$count = 0;
+
+		foreach ($post_ids as $post_id) {
+			if (! current_user_can('edit_post', (int) $post_id)) {
+				continue;
+			}
+			if (get_post_type((int) $post_id) !== $this->post_type) {
+				continue;
+			}
+			update_post_meta((int) $post_id, $this->meta_active, $value);
+			$count++;
+		}
+
+		return add_query_arg(
+			array(
+				'kcas_bulk_action' => $action,
+				'kcas_bulk_count'  => $count,
+			),
+			$redirect_to
+		);
+	}
+
+	/**
+	 * Show an admin notice after a bulk action completes.
+	 */
+	public function bulk_action_notice()
+	{
+		$screen = get_current_screen();
+		if (! $screen || $screen->post_type !== $this->post_type) {
+			return;
+		}
+
+		if (empty($_GET['kcas_bulk_action']) || ! isset($_GET['kcas_bulk_count'])) {
+			return;
+		}
+
+		$action = sanitize_key($_GET['kcas_bulk_action']);
+		$count  = (int) $_GET['kcas_bulk_count'];
+
+		if ('kcas_activate' === $action) {
+			$message = sprintf(
+				/* translators: %d: number of sections activated */
+				_n('%d section activated.', '%d sections activated.', $count, 'kayce-custom-archive-sections'),
+				$count
+			);
+		} else {
+			$message = sprintf(
+				/* translators: %d: number of sections deactivated */
+				_n('%d section deactivated.', '%d sections deactivated.', $count, 'kayce-custom-archive-sections'),
+				$count
+			);
+		}
+
+		echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+	}
+
+	// =========================================================================
+	// Sortable Columns (#18)
+	// =========================================================================
+
+	/**
+	 * Declare which custom columns are sortable.
+	 *
+	 * @param array $columns
+	 * @return array
+	 */
+	public function register_sortable_columns($columns)
+	{
+		$columns['kcas_active']     = 'kcas_active';
+		$columns['kcas_location']   = 'kcas_location';
+		$columns['kcas_position']   = 'kcas_position';
+		$columns['kcas_visibility'] = 'kcas_visibility';
+		return $columns;
+	}
+
+	/**
+	 * Apply custom meta-based ordering when a sortable column is active.
+	 *
+	 * @param WP_Query $query
+	 */
+	public function handle_column_orderby($query)
+	{
+		if (! is_admin() || ! $query->is_main_query()) {
+			return;
+		}
+
+		if ($query->get('post_type') !== $this->post_type) {
+			return;
+		}
+
+		$orderby_map = array(
+			'kcas_active'     => $this->meta_active,
+			'kcas_location'   => $this->meta_location,
+			'kcas_position'   => $this->meta_position,
+			'kcas_visibility' => $this->meta_visibility,
+		);
+
+		$orderby = $query->get('orderby');
+		if (isset($orderby_map[$orderby])) {
+			$query->set('meta_key', $orderby_map[$orderby]);
+			$query->set('orderby',  'meta_value');
+		}
 	}
 }
