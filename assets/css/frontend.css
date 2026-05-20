@@ -13,6 +13,13 @@
 	width: 100%;
 }
 
+.kcas-archive-sections--before_content {
+	/* Sits between the site header and the page content area.
+	   No top margin — the theme's header already provides separation.
+	   Bottom margin pushes the content area down naturally. */
+	margin-bottom: 0;
+}
+
 .kcas-archive-sections--before {
 	margin-bottom: 2em;
 }

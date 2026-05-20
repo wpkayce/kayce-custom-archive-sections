@@ -52,7 +52,7 @@ class KCAS_Admin
 	);
 
 	/** @var string[] */
-	private static $allowed_positions = array('before', 'after');
+	private static $allowed_positions = array('before_content', 'before', 'after');
 
 	/** @var string[] */
 	private static $allowed_visibilities = array('all', 'logged_in', 'logged_out');
@@ -285,7 +285,11 @@ class KCAS_Admin
 				<span class="dashicons dashicons-sort"></span>
 				<?php esc_html_e('Position', 'kayce-custom-archive-sections'); ?>
 			</p>
-			<div class="kcas-btn-group">
+			<div class="kcas-btn-group kcas-btn-group--3">
+				<label class="kcas-btn-option <?php echo ('before_content' === $position) ? 'is-selected' : ''; ?>">
+					<input type="radio" name="kcas_position" value="before_content" <?php checked($position, 'before_content'); ?> />
+					<span><span class="dashicons dashicons-layout"></span> <?php esc_html_e('After header', 'kayce-custom-archive-sections'); ?></span>
+				</label>
 				<label class="kcas-btn-option <?php echo ('before' === $position) ? 'is-selected' : ''; ?>">
 					<input type="radio" name="kcas_position" value="before" <?php checked($position, 'before'); ?> />
 					<span><span class="dashicons dashicons-arrow-up-alt2"></span> <?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?></span>
@@ -574,11 +578,12 @@ class KCAS_Admin
 
 			case 'kcas_position':
 				$position = get_post_meta($post_id, $this->meta_position, true);
-				if ('after' === $position) {
-					esc_html_e('After posts', 'kayce-custom-archive-sections');
-				} else {
-					esc_html_e('Before posts', 'kayce-custom-archive-sections');
-				}
+				$pos_labels = array(
+					'before_content' => __('After header',  'kayce-custom-archive-sections'),
+					'before'         => __('Before posts',  'kayce-custom-archive-sections'),
+					'after'          => __('After posts',   'kayce-custom-archive-sections'),
+				);
+				echo esc_html(isset($pos_labels[$position]) ? $pos_labels[$position] : __('Before posts', 'kayce-custom-archive-sections'));
 				break;
 
 			case 'kcas_visibility':
@@ -734,6 +739,7 @@ class KCAS_Admin
 				<label>
 					<span class="title"><?php esc_html_e('Position', 'kayce-custom-archive-sections'); ?></span>
 					<select name="kcas_position">
+						<option value="before_content"><?php esc_html_e('After header', 'kayce-custom-archive-sections'); ?></option>
 						<option value="before"><?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?></option>
 						<option value="after"><?php esc_html_e('After posts', 'kayce-custom-archive-sections'); ?></option>
 					</select>

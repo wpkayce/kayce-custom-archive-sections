@@ -71,6 +71,7 @@ class KCAS_Frontend
 			add_filter('render_block', array($this, 'inject_around_query_block'), 10, 2);
 		} else {
 			add_action('get_header', array($this, 'register_loop_hooks'));
+			add_action('get_header', array($this, 'register_before_content_hooks'));
 		}
 	}
 
@@ -104,6 +105,75 @@ class KCAS_Frontend
 	{
 		add_action('loop_start', array($this, 'maybe_output_sections_before'));
 		add_action('loop_end',   array($this, 'maybe_output_sections_after'));
+	}
+
+	/**
+	 * Register the "after header / before content area" injection point for
+	 * classic themes (the `before_content` position value).
+	 *
+	 * There is no universal WordPress hook that fires between </header> and the
+	 * opening content wrapper. Major themes each expose their own named action
+	 * for this spot. We try a cascade of known hooks so the section renders in
+	 * the structurally correct place on popular themes.
+	 *
+	 * If none of the theme-specific hooks fire (unknown theme), we fall back to
+	 * `loop_start` at priority 1 — placing the section at the very top of the
+	 * post loop, which is the closest universally available equivalent.
+	 *
+	 * Known hook map:
+	 *   astra_header_after          — Astra
+	 *   genesis_after_header        — Genesis Framework
+	 *   ocean_after_header          — OceanWP
+	 *   kadence_after_header        — Kadence
+	 *   neve_after_header_wrapper   — Neve
+	 *   storefront_after_header     — WooCommerce Storefront
+	 *   hestia_after_header         — Hestia
+	 *   bimber_site_after_header    — Bimber / Newspaper-family
+	 */
+	public function register_before_content_hooks()
+	{
+		// One-shot flag: prevents double output if two theme hooks both fire.
+		$fired = false;
+		$self  = $this;
+
+		$output = function () use (&$fired, $self) {
+			if ($fired || is_admin()) {
+				return;
+			}
+			$fired = true;
+			foreach ($self->resolve_locations() as $loc) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo $self->get_sections_html($loc['location'], 'before_content', $loc['extra']);
+			}
+		};
+
+		// ── Theme-specific "after header" hooks ───────────────────────────────
+		$theme_hooks = array(
+			'astra_header_after',         // Astra
+			'genesis_after_header',       // Genesis Framework
+			'ocean_after_header',         // OceanWP
+			'kadence_after_header',       // Kadence
+			'neve_after_header_wrapper',  // Neve
+			'storefront_after_header',    // WooCommerce Storefront
+			'hestia_after_header',        // Hestia
+			'bimber_site_after_header',   // Bimber
+		);
+
+		foreach ($theme_hooks as $hook) {
+			add_action($hook, $output, 10);
+		}
+
+		// ── Universal fallback: top of main loop ──────────────────────────────
+		// Fires only if none of the above theme hooks triggered.
+		add_action(
+			'loop_start',
+			function ($query) use (&$fired, $output) {
+				if (! $fired && $query->is_main_query() && ! is_admin()) {
+					$output();
+				}
+			},
+			1   // Priority 1 — runs before our regular 'before' output at default priority.
+		);
 	}
 
 	/**
@@ -178,6 +248,10 @@ class KCAS_Frontend
 		$after  = '';
 
 		foreach ($locations as $loc) {
+			// 'before_content' on FSE themes: the Query block is already the first
+			// content after the header template part, so injecting before it is
+			// structurally equivalent to "after header". Merge with 'before' output.
+			$before .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
 			$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
 			$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
 		}
@@ -274,7 +348,7 @@ class KCAS_Frontend
 			'search_results',
 			'date_archives',
 		);
-		$allowed_positions = array('before', 'after');
+		$allowed_positions = array('before_content', 'before', 'after');
 
 		if (
 			! in_array($location, $allowed_locations, true) ||
