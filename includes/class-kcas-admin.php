@@ -280,7 +280,7 @@ class KCAS_Admin
 		<div class="kcas-divider"></div>
 
 		<?php /* ── Position ── */ ?>
-		<div class="kcas-section">
+		<div class="kcas-section" id="kcas-position-row">
 			<p class="kcas-section-label">
 				<span class="dashicons dashicons-sort"></span>
 				<?php esc_html_e('Position', 'kayce-custom-archive-sections'); ?>

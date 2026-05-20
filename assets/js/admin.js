@@ -64,17 +64,37 @@
 			syncBtnGroup();
 		} );
 
-		// ── 3. Location radio → show/hide specific categories row ─────────────
+		// ── 3. Location radio → show/hide dependent sections ────────────────
 		var categoriesRow = document.getElementById( 'kcas-categories-row' );
+		var positionRow   = document.getElementById( 'kcas-position-row' );
+		// The .kcas-divider immediately before the Position section.
+		var positionDivider = positionRow ? positionRow.previousElementSibling : null;
 
-		if ( locationGrid && categoriesRow ) {
-			function syncCategoriesVisibility() {
-				var selected = locationGrid.querySelector( 'input[name="kcas_location"]:checked' );
-				var show     = selected && selected.value === 'specific_categories';
-				categoriesRow.style.display = show ? '' : 'none';
+		function syncLocationDependents() {
+			if ( ! locationGrid ) {
+				return;
 			}
-			locationGrid.addEventListener( 'change', syncCategoriesVisibility );
-			syncCategoriesVisibility();
+			var selected   = locationGrid.querySelector( 'input[name="kcas_location"]:checked' );
+			var value      = selected ? selected.value : '';
+			var hasLocation = value !== '';
+
+			// Categories row — only when Specific Categories is chosen.
+			if ( categoriesRow ) {
+				categoriesRow.style.display = ( value === 'specific_categories' ) ? '' : 'none';
+			}
+
+			// Position row (and its preceding divider) — hidden when Disabled.
+			if ( positionRow ) {
+				positionRow.style.display = hasLocation ? '' : 'none';
+			}
+			if ( positionDivider && positionDivider.classList.contains( 'kcas-divider' ) ) {
+				positionDivider.style.display = hasLocation ? '' : 'none';
+			}
+		}
+
+		if ( locationGrid ) {
+			locationGrid.addEventListener( 'change', syncLocationDependents );
+			syncLocationDependents();
 		}
 
 		// ── 4. Category search filter ─────────────────────────────────────────

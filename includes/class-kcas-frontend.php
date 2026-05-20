@@ -220,7 +220,10 @@ class KCAS_Frontend
 		}
 
 		if (is_single()) {
-			return array(array('location' => 'single_post', 'extra' => ''));
+			// Include the post ID in the cache key so each post gets its own
+			// cached copy — required because dynamic blocks (e.g. core/post-title)
+			// resolve to the specific post being viewed.
+			return array(array('location' => 'single_post', 'extra' => (string) get_queried_object_id()));
 		}
 
 		if (is_tag()) {
@@ -311,7 +314,8 @@ class KCAS_Frontend
 
 		while ($sections_query->have_posts()) {
 			$sections_query->the_post();
-			$post_id = get_the_ID();
+			$post_id      = get_the_ID();
+			$section_post = get_post(); // The kcas_section post — saved for restoration.
 
 			// ── Visibility check (feature 1e) ─────────────────────────────────
 			if (! $this->passes_visibility_check($post_id)) {
@@ -320,8 +324,34 @@ class KCAS_Frontend
 
 			// ── Build section content ─────────────────────────────────────────
 			$content = get_the_content();
+
+			// Dynamic blocks (e.g. core/post-title, core/post-excerpt) read from
+			// the global $post. While iterating sections, $post is the kcas_section
+			// post — so those blocks would show the section's own title/data.
+			//
+			// For singular pages, temporarily swap $post to the viewed post so
+			// dynamic blocks resolve against the correct page context. For archive
+			// pages there is no single queried post, so we leave $post as-is and
+			// let archive-aware blocks (core/archive-title, core/term-description)
+			// continue to use get_queried_object() on their own.
+			$page_context_post = null;
+			if (is_singular()) {
+				$queried = get_queried_object();
+				if ($queried instanceof WP_Post) {
+					$page_context_post       = $queried;
+					$GLOBALS['post']         = $page_context_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- intentional; restored below
+					setup_postdata($page_context_post);
+				}
+			}
+
 			$content = apply_filters('the_content', $content); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally applying the core WP content filter
 			$content = str_replace(']]>', ']]&gt;', $content);
+
+			// Restore the section post context for the next loop iteration.
+			if ($page_context_post) {
+				$GLOBALS['post'] = $section_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- restoring previous value
+				setup_postdata($section_post);
+			}
 
 			$section_html = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr($post_id) . '">';
 			$section_html .= $content;
