@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Uninstall routine for Kayce Custom Archive Sections.
  *
@@ -9,7 +10,7 @@
  */
 
 // Safety check: only run when WordPress calls this file directly.
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+if (! defined('WP_UNINSTALL_PLUGIN')) {
 	exit;
 }
 
@@ -24,8 +25,8 @@ $kcas_post_ids = get_posts(
 	)
 );
 
-foreach ( $kcas_post_ids as $kcas_post_id ) {
-	wp_delete_post( (int) $kcas_post_id, true ); // true = force delete, skip trash.
+foreach ($kcas_post_ids as $kcas_post_id) {
+	wp_delete_post((int) $kcas_post_id, true); // true = force delete, skip trash.
 }
 
 // Remove any leftover cache version options.
@@ -33,12 +34,13 @@ $kcas_locations = array(
 	'blog_index',
 	'category_archives',
 	'specific_categories',
+	'single_post',
 	'tag_archives',
 	'author_archives',
 	'search_results',
 	'date_archives',
 );
 
-foreach ( $kcas_locations as $kcas_location ) {
-	delete_option( 'kcas_cache_v_' . $kcas_location );
+foreach ($kcas_locations as $kcas_location) {
+	delete_option('kcas_cache_v_' . $kcas_location);
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Transient caching for Kayce Custom Archive Sections.
  *
@@ -13,14 +14,15 @@
  * @package Kayce_Custom_Archive_Sections
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
 /**
  * Class KCAS_Cache
  */
-class KCAS_Cache {
+class KCAS_Cache
+{
 
 	/** Transient lifetime in seconds (12 hours). */
 	const EXPIRY = 43200;
@@ -30,6 +32,7 @@ class KCAS_Cache {
 		'blog_index',
 		'category_archives',
 		'specific_categories',
+		'single_post',
 		'tag_archives',
 		'author_archives',
 		'search_results',
@@ -52,16 +55,17 @@ class KCAS_Cache {
 	 * @param string $meta_location
 	 * @param string $meta_position
 	 */
-	public function __construct( $post_type, $meta_location, $meta_position ) {
+	public function __construct($post_type, $meta_location, $meta_position)
+	{
 		$this->post_type     = $post_type;
 		$this->meta_location = $meta_location;
 		$this->meta_position = $meta_position;
 
 		// Bust on any lifecycle event that could change what's displayed.
-		add_action( 'save_post_' . $this->post_type, array( $this, 'bust_for_section' ), 20 );
-		add_action( 'delete_post',   array( $this, 'bust_for_section' ) );
-		add_action( 'trashed_post',  array( $this, 'bust_for_section' ) );
-		add_action( 'untrashed_post', array( $this, 'bust_for_section' ) );
+		add_action('save_post_' . $this->post_type, array($this, 'bust_for_section'), 20);
+		add_action('delete_post',   array($this, 'bust_for_section'));
+		add_action('trashed_post',  array($this, 'bust_for_section'));
+		add_action('untrashed_post', array($this, 'bust_for_section'));
 	}
 
 	// -------------------------------------------------------------------------
@@ -76,9 +80,10 @@ class KCAS_Cache {
 	 * @param string $extra    Optional extra context (e.g. category ID).
 	 * @return string|false
 	 */
-	public static function get( $location, $position, $extra = '' ) {
-		$cached = get_transient( self::build_key( $location, $position, $extra ) );
-		return ( false !== $cached ) ? $cached : false;
+	public static function get($location, $position, $extra = '')
+	{
+		$cached = get_transient(self::build_key($location, $position, $extra));
+		return (false !== $cached) ? $cached : false;
 	}
 
 	/**
@@ -89,8 +94,9 @@ class KCAS_Cache {
 	 * @param string $html
 	 * @param string $extra
 	 */
-	public static function set( $location, $position, $html, $extra = '' ) {
-		set_transient( self::build_key( $location, $position, $extra ), $html, self::EXPIRY );
+	public static function set($location, $position, $html, $extra = '')
+	{
+		set_transient(self::build_key($location, $position, $extra), $html, self::EXPIRY);
 	}
 
 	// -------------------------------------------------------------------------
@@ -112,11 +118,12 @@ class KCAS_Cache {
 	 * @param string $extra
 	 * @return string
 	 */
-	public static function build_key( $location, $position, $extra = '' ) {
-		$version   = self::get_version( $location );
+	public static function build_key($location, $position, $extra = '')
+	{
+		$version   = self::get_version($location);
 		$logged_in = is_user_logged_in() ? '1' : '0';
-		$raw       = implode( '_', array_filter( array( $version, $location, $position, $extra, $logged_in ) ) );
-		return 'kcas_' . md5( $raw );
+		$raw       = implode('_', array_filter(array($version, $location, $position, $extra, $logged_in)));
+		return 'kcas_' . md5($raw);
 	}
 
 	// -------------------------------------------------------------------------
@@ -131,28 +138,30 @@ class KCAS_Cache {
 	 *
 	 * @param int $post_id
 	 */
-	public function bust_for_section( $post_id ) {
-		if ( get_post_type( $post_id ) !== $this->post_type ) {
+	public function bust_for_section($post_id)
+	{
+		if (get_post_type($post_id) !== $this->post_type) {
 			return;
 		}
 
-		$location = get_post_meta( $post_id, $this->meta_location, true );
+		$location = get_post_meta($post_id, $this->meta_location, true);
 
-		if ( empty( $location ) ) {
+		if (empty($location)) {
 			// Location unknown — bust everything to be safe.
 			self::bust_all();
 			return;
 		}
 
-		self::increment_version( $location );
+		self::increment_version($location);
 	}
 
 	/**
 	 * Bust every location's cache. Used on plugin deactivation.
 	 */
-	public static function bust_all() {
-		foreach ( self::LOCATIONS as $location ) {
-			self::increment_version( $location );
+	public static function bust_all()
+	{
+		foreach (self::LOCATIONS as $location) {
+			self::increment_version($location);
 		}
 	}
 
@@ -166,8 +175,9 @@ class KCAS_Cache {
 	 * @param string $location
 	 * @return int
 	 */
-	private static function get_version( $location ) {
-		return (int) get_option( 'kcas_cache_v_' . sanitize_key( $location ), 0 );
+	private static function get_version($location)
+	{
+		return (int) get_option('kcas_cache_v_' . sanitize_key($location), 0);
 	}
 
 	/**
@@ -176,8 +186,9 @@ class KCAS_Cache {
 	 *
 	 * @param string $location
 	 */
-	private static function increment_version( $location ) {
-		$current = self::get_version( $location );
-		update_option( 'kcas_cache_v_' . sanitize_key( $location ), $current + 1, false );
+	private static function increment_version($location)
+	{
+		$current = self::get_version($location);
+		update_option('kcas_cache_v_' . sanitize_key($location), $current + 1, false);
 	}
 }

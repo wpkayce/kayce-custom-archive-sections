@@ -6,7 +6,7 @@
  * Description:       Create and manage reusable content sections that automatically display before or after posts on your blog index and category archive pages. Designed to work seamlessly with Gutenberg and Elementor.
  * Version:           1.0.0
  * Author:            rohitkc32,wpkacey
- * Author URI:        https://profiles.wordpress.org/rohitkc32
+ * Author URI:        https://wpkayce.io
  * Text Domain:       kayce-custom-archive-sections
  * Domain Path:       /languages
  * License:           GPL-2.0+

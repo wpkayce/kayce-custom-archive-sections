@@ -176,33 +176,33 @@ class KCAS_Admin
 		$all_cats = get_categories(array('hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC'));
 ?>
 
-<?php /* ── Active toggle ── */ ?>
-<div class="kcas-field-group">
-    <label class="kcas-active-label">
-        <input type="checkbox" name="kcas_active" value="1" <?php checked($active, '1'); ?> />
-        <strong><?php esc_html_e('Active — display this section', 'kayce-custom-archive-sections'); ?></strong>
-    </label>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('Uncheck to hide this section without deleting it.', 'kayce-custom-archive-sections'); ?>
-    </p>
-</div>
+		<?php /* ── Active toggle ── */ ?>
+		<div class="kcas-field-group">
+			<label class="kcas-active-label">
+				<input type="checkbox" name="kcas_active" value="1" <?php checked($active, '1'); ?> />
+				<strong><?php esc_html_e('Active — display this section', 'kayce-custom-archive-sections'); ?></strong>
+			</label>
+			<p class="kcas-meta-help">
+				<?php esc_html_e('Uncheck to hide this section without deleting it.', 'kayce-custom-archive-sections'); ?>
+			</p>
+		</div>
 
-<?php /* ── Location ── */ ?>
-<div class="kcas-field-group">
-    <p class="kcas-field-title">
-        <?php esc_html_e('Where should this section appear?', 'kayce-custom-archive-sections'); ?></p>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('Choose the archive pages that will display this section.', 'kayce-custom-archive-sections'); ?>
-    </p>
+		<?php /* ── Location ── */ ?>
+		<div class="kcas-field-group">
+			<p class="kcas-field-title">
+				<?php esc_html_e('Where should this section appear?', 'kayce-custom-archive-sections'); ?></p>
+			<p class="kcas-meta-help">
+				<?php esc_html_e('Choose the archive pages that will display this section.', 'kayce-custom-archive-sections'); ?>
+			</p>
 
-    <div class="kcas-inline-options" id="kcas-location-options">
-        <?php
+			<div class="kcas-inline-options" id="kcas-location-options">
+				<?php
 				$location_options = array(
 					''                    => __('Disabled (do not display)', 'kayce-custom-archive-sections'),
 					'blog_index'          => __('Blog index (posts page)', 'kayce-custom-archive-sections'),
 					'category_archives'   => __('All category archives', 'kayce-custom-archive-sections'),
 					'specific_categories' => __('Specific categories only', 'kayce-custom-archive-sections'),
-					'single_post' 		  => __('Single Posts', 'kayce-custom-archive-section'),
+					'single_post' 		  => __('Single Posts', 'kayce-custom-archive-sections'),
 					'tag_archives'        => __('Tag archives', 'kayce-custom-archive-sections'),
 					'author_archives'     => __('Author archives', 'kayce-custom-archive-sections'),
 					'search_results'      => __('Search results page', 'kayce-custom-archive-sections'),
@@ -211,91 +211,91 @@ class KCAS_Admin
 
 				foreach ($location_options as $value => $label) :
 				?>
-        <label>
-            <input type="radio" name="kcas_location" value="<?php echo esc_attr($value); ?>"
-                <?php checked($location, $value); ?> />
-            <?php echo esc_html($label); ?>
-        </label>
-        <?php endforeach; ?>
-    </div>
-</div>
+					<label>
+						<input type="radio" name="kcas_location" value="<?php echo esc_attr($value); ?>"
+							<?php checked($location, $value); ?> />
+						<?php echo esc_html($label); ?>
+					</label>
+				<?php endforeach; ?>
+			</div>
+		</div>
 
-<?php /* ── Specific Categories (shown / hidden via JS) ── */ ?>
-<div class="kcas-field-group" id="kcas-categories-row"
-    style="<?php echo ('specific_categories' !== $location) ? 'display:none;' : ''; ?>">
-    <p class="kcas-field-title"><?php esc_html_e('Choose categories', 'kayce-custom-archive-sections'); ?></p>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('The section will appear on the archive pages for the selected categories only.', 'kayce-custom-archive-sections'); ?>
-    </p>
+		<?php /* ── Specific Categories (shown / hidden via JS) ── */ ?>
+		<div class="kcas-field-group" id="kcas-categories-row"
+			style="<?php echo ('specific_categories' !== $location) ? 'display:none;' : ''; ?>">
+			<p class="kcas-field-title"><?php esc_html_e('Choose categories', 'kayce-custom-archive-sections'); ?></p>
+			<p class="kcas-meta-help">
+				<?php esc_html_e('The section will appear on the archive pages for the selected categories only.', 'kayce-custom-archive-sections'); ?>
+			</p>
 
-    <?php if (! empty($all_cats)) : ?>
-    <div class="kcas-category-list">
-        <?php foreach ($all_cats as $cat) : ?>
-        <label>
-            <input type="checkbox" name="kcas_categories[]" value="<?php echo esc_attr($cat->term_id); ?>"
-                <?php checked(in_array((int) $cat->term_id, array_map('intval', $categories), true)); ?> />
-            <?php echo esc_html($cat->name); ?>
-            <span class="kcas-cat-count">(<?php echo (int) $cat->count; ?>)</span>
-        </label>
-        <?php endforeach; ?>
-    </div>
-    <?php else : ?>
-    <p class="kcas-meta-help"><?php esc_html_e('No categories found.', 'kayce-custom-archive-sections'); ?></p>
-    <?php endif; ?>
-</div>
+			<?php if (! empty($all_cats)) : ?>
+				<div class="kcas-category-list">
+					<?php foreach ($all_cats as $cat) : ?>
+						<label>
+							<input type="checkbox" name="kcas_categories[]" value="<?php echo esc_attr($cat->term_id); ?>"
+								<?php checked(in_array((int) $cat->term_id, array_map('intval', $categories), true)); ?> />
+							<?php echo esc_html($cat->name); ?>
+							<span class="kcas-cat-count">(<?php echo (int) $cat->count; ?>)</span>
+						</label>
+					<?php endforeach; ?>
+				</div>
+			<?php else : ?>
+				<p class="kcas-meta-help"><?php esc_html_e('No categories found.', 'kayce-custom-archive-sections'); ?></p>
+			<?php endif; ?>
+		</div>
 
-<?php /* ── Position ── */ ?>
-<div class="kcas-field-group">
-    <p class="kcas-field-title"><?php esc_html_e('Position on archive page', 'kayce-custom-archive-sections'); ?></p>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('Should this section appear before or after the list of posts?', 'kayce-custom-archive-sections'); ?>
-    </p>
+		<?php /* ── Position ── */ ?>
+		<div class="kcas-field-group">
+			<p class="kcas-field-title"><?php esc_html_e('Position on archive page', 'kayce-custom-archive-sections'); ?></p>
+			<p class="kcas-meta-help">
+				<?php esc_html_e('Should this section appear before or after the list of posts?', 'kayce-custom-archive-sections'); ?>
+			</p>
 
-    <div class="kcas-inline-options">
-        <label>
-            <input type="radio" name="kcas_position" value="before" <?php checked($position, 'before'); ?> />
-            <?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?>
-        </label>
-        <label>
-            <input type="radio" name="kcas_position" value="after" <?php checked($position, 'after'); ?> />
-            <?php esc_html_e('After posts', 'kayce-custom-archive-sections'); ?>
-        </label>
-    </div>
-</div>
+			<div class="kcas-inline-options">
+				<label>
+					<input type="radio" name="kcas_position" value="before" <?php checked($position, 'before'); ?> />
+					<?php esc_html_e('Before posts', 'kayce-custom-archive-sections'); ?>
+				</label>
+				<label>
+					<input type="radio" name="kcas_position" value="after" <?php checked($position, 'after'); ?> />
+					<?php esc_html_e('After posts', 'kayce-custom-archive-sections'); ?>
+				</label>
+			</div>
+		</div>
 
-<?php /* ── Visibility ── */ ?>
-<div class="kcas-field-group">
-    <p class="kcas-field-title"><?php esc_html_e('Show to', 'kayce-custom-archive-sections'); ?></p>
-    <p class="kcas-meta-help">
-        <?php esc_html_e('Control which visitors see this section.', 'kayce-custom-archive-sections'); ?></p>
+		<?php /* ── Visibility ── */ ?>
+		<div class="kcas-field-group">
+			<p class="kcas-field-title"><?php esc_html_e('Show to', 'kayce-custom-archive-sections'); ?></p>
+			<p class="kcas-meta-help">
+				<?php esc_html_e('Control which visitors see this section.', 'kayce-custom-archive-sections'); ?></p>
 
-    <div class="kcas-inline-options">
-        <label>
-            <input type="radio" name="kcas_visibility" value="all" <?php checked($visibility, 'all'); ?> />
-            <?php esc_html_e('Everyone', 'kayce-custom-archive-sections'); ?>
-        </label>
-        <label>
-            <input type="radio" name="kcas_visibility" value="logged_in" <?php checked($visibility, 'logged_in'); ?> />
-            <?php esc_html_e('Logged-in users only', 'kayce-custom-archive-sections'); ?>
-        </label>
-        <label>
-            <input type="radio" name="kcas_visibility" value="logged_out"
-                <?php checked($visibility, 'logged_out'); ?> />
-            <?php esc_html_e('Logged-out visitors only', 'kayce-custom-archive-sections'); ?>
-        </label>
-    </div>
-</div>
+			<div class="kcas-inline-options">
+				<label>
+					<input type="radio" name="kcas_visibility" value="all" <?php checked($visibility, 'all'); ?> />
+					<?php esc_html_e('Everyone', 'kayce-custom-archive-sections'); ?>
+				</label>
+				<label>
+					<input type="radio" name="kcas_visibility" value="logged_in" <?php checked($visibility, 'logged_in'); ?> />
+					<?php esc_html_e('Logged-in users only', 'kayce-custom-archive-sections'); ?>
+				</label>
+				<label>
+					<input type="radio" name="kcas_visibility" value="logged_out"
+						<?php checked($visibility, 'logged_out'); ?> />
+					<?php esc_html_e('Logged-out visitors only', 'kayce-custom-archive-sections'); ?>
+				</label>
+			</div>
+		</div>
 
-<?php /* ── Preview link ── */ ?>
-<?php $preview_url = $this->get_preview_url($location, $categories); ?>
-<?php if ($preview_url) : ?>
-<div class="kcas-field-group kcas-preview-group">
-    <p class="kcas-field-title"><?php esc_html_e('Preview', 'kayce-custom-archive-sections'); ?></p>
-    <a href="<?php echo esc_url($preview_url); ?>" target="_blank" class="button button-small">
-        <?php esc_html_e('View archive page →', 'kayce-custom-archive-sections'); ?>
-    </a>
-</div>
-<?php endif; ?>
+		<?php /* ── Preview link ── */ ?>
+		<?php $preview_url = $this->get_preview_url($location, $categories); ?>
+		<?php if ($preview_url) : ?>
+			<div class="kcas-field-group kcas-preview-group">
+				<p class="kcas-field-title"><?php esc_html_e('Preview', 'kayce-custom-archive-sections'); ?></p>
+				<a href="<?php echo esc_url($preview_url); ?>" target="_blank" class="button button-small">
+					<?php esc_html_e('View archive page →', 'kayce-custom-archive-sections'); ?>
+				</a>
+			</div>
+		<?php endif; ?>
 
 <?php
 	}
@@ -326,7 +326,7 @@ class KCAS_Admin
 				return null;
 
 			case 'single_post':
-				$posts = get_posts(array('number' => 1, 'post_status' => 'publish'));
+				$posts = get_posts(array('numberposts' => 1, 'post_status' => 'publish'));
 				return !empty($posts) ? get_permalink($posts[0]->ID) : null;
 
 			case 'tag_archives':
@@ -485,6 +485,7 @@ class KCAS_Admin
 					'blog_index'          => esc_html__('Blog index', 'kayce-custom-archive-sections'),
 					'category_archives'   => esc_html__('All categories', 'kayce-custom-archive-sections'),
 					'specific_categories' => esc_html__('Specific categories', 'kayce-custom-archive-sections'),
+					'single_post' 		  => esc_html__('Single posts', 'kayce-custom-archive-sections'),
 					'tag_archives'        => esc_html__('Tags', 'kayce-custom-archive-sections'),
 					'author_archives'     => esc_html__('Authors', 'kayce-custom-archive-sections'),
 					'search_results'      => esc_html__('Search results', 'kayce-custom-archive-sections'),
