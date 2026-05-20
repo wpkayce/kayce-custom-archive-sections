@@ -426,14 +426,21 @@ class KCAS_Admin
 		}
 
 		// ── Specific categories ───────────────────────────────────────────────
-		if ('specific_categories' === $location && ! empty($_POST['kcas_categories'])) {
-			// Sanitise: each value must be a positive integer (term ID).
-			$raw_cats = array_map('absint', (array) $_POST['kcas_categories']);
-			$cats     = array_filter($raw_cats); // remove zeros
-			update_post_meta($post_id, $this->meta_categories, array_values($cats));
-		} else {
-			delete_post_meta($post_id, $this->meta_categories);
+		// Only save/update when in specific_categories mode. When switching to
+		// a different location we intentionally keep the saved category IDs so
+		// the user does not have to reselect them if they switch back.
+		if ('specific_categories' === $location) {
+			if (! empty($_POST['kcas_categories'])) {
+				// Sanitise: each value must be a positive integer (term ID).
+				$raw_cats = array_map('absint', (array) $_POST['kcas_categories']);
+				$cats     = array_filter($raw_cats); // remove zeros
+				update_post_meta($post_id, $this->meta_categories, array_values($cats));
+			} else {
+				// User unchecked all categories while still on specific_categories.
+				delete_post_meta($post_id, $this->meta_categories);
+			}
 		}
+		// If location !== specific_categories, leave meta untouched (preserve selection).
 
 		// ── Position ──────────────────────────────────────────────────────────
 		$position = isset($_POST['kcas_position'])

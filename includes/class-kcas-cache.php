@@ -96,7 +96,18 @@ class KCAS_Cache
 	 */
 	public static function set($location, $position, $html, $extra = '')
 	{
-		set_transient(self::build_key($location, $position, $extra), $html, self::EXPIRY);
+		// Use the admin-configured expiry if the settings class is available,
+		// otherwise fall back to the hardcoded constant.
+		$expiry = class_exists('KCAS_Settings')
+			? KCAS_Settings::get_cache_expiry_seconds()
+			: self::EXPIRY;
+
+		// If expiry is 0 the admin has disabled caching — skip storing.
+		if (0 === $expiry) {
+			return;
+		}
+
+		set_transient(self::build_key($location, $position, $extra), $html, $expiry);
 	}
 
 	// -------------------------------------------------------------------------

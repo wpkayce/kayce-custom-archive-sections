@@ -43,8 +43,10 @@ class KCAS_Plugin {
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-cache.php';
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-admin.php';
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-frontend.php';
+		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-settings.php';
 
 		new KCAS_CPT( self::POST_TYPE );
+		new KCAS_Settings( self::POST_TYPE );
 
 		new KCAS_Cache(
 			self::POST_TYPE,
