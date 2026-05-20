@@ -325,27 +325,62 @@ class KCAS_Frontend
 			// ── Build section content ─────────────────────────────────────────
 			$content = get_the_content();
 
-			// Dynamic blocks (e.g. core/post-title, core/post-excerpt) read from
-			// the global $post. While iterating sections, $post is the kcas_section
-			// post — so those blocks would show the section's own title/data.
+			// ── Dynamic block context ──────────────────────────────────────────
+			// Dynamic blocks read post data from either:
+			//   (a) the global $post             — classic / fallback path
+			//   (b) $block->context['postId']    — block context path (Gutenberg)
 			//
-			// For singular pages, temporarily swap $post to the viewed post so
-			// dynamic blocks resolve against the correct page context. For archive
-			// pages there is no single queried post, so we leave $post as-is and
-			// let archive-aware blocks (core/archive-title, core/term-description)
-			// continue to use get_queried_object() on their own.
-			$page_context_post = null;
+			// While iterating our sections query, $post is the kcas_section post,
+			// so without intervention those blocks show the section's own data.
+			//
+			// Singular pages (single posts, pages, attachments):
+			//   Swap $post to the viewed post AND inject its ID into block context.
+			//   Covers: core/post-title, core/post-excerpt, core/post-featured-image.
+			//
+			// Archive pages (category, tag, author, search, date, blog index):
+			//   There is no single "current post". Clear postId/postType from block
+			//   context so post-specific blocks return '' instead of the section's
+			//   own data. Archive-aware blocks (core/archive-title, core/term-
+			//   description) read from get_the_archive_title() / get_queried_object()
+			//   and are unaffected by this filter.
+			$page_context_post    = null;
+			$block_context_filter = null;
+
 			if (is_singular()) {
 				$queried = get_queried_object();
 				if ($queried instanceof WP_Post) {
-					$page_context_post       = $queried;
-					$GLOBALS['post']         = $page_context_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- intentional; restored below
+					$page_context_post = $queried;
+					$GLOBALS['post']   = $page_context_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- intentional; restored below
 					setup_postdata($page_context_post);
+
+					$ctx_id   = $page_context_post->ID;
+					$ctx_type = $page_context_post->post_type;
+
+					$block_context_filter = static function ($context) use ($ctx_id, $ctx_type) {
+						$context['postId']   = $ctx_id;
+						$context['postType'] = $ctx_type;
+						return $context;
+					};
 				}
+			} else {
+				// Archive: strip postId so post-specific blocks render '' rather
+				// than showing the kcas_section's own title / excerpt / etc.
+				$block_context_filter = static function ($context) {
+					unset($context['postId'], $context['postType']);
+					return $context;
+				};
+			}
+
+			if ($block_context_filter) {
+				add_filter('render_block_context', $block_context_filter, 5); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			}
 
 			$content = apply_filters('the_content', $content); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally applying the core WP content filter
 			$content = str_replace(']]>', ']]&gt;', $content);
+
+			if ($block_context_filter) {
+				remove_filter('render_block_context', $block_context_filter, 5); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			}
 
 			// Restore the section post context for the next loop iteration.
 			if ($page_context_post) {
