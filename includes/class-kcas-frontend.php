@@ -232,14 +232,24 @@ class KCAS_Frontend
 	// =========================================================================
 
 	/**
-	 * Wrap the core/query or core/post-content block with archive sections
-	 * (block/FSE themes).
+	 * Wrap FSE blocks with archive sections (block/FSE themes).
 	 *
-	 * Two cases handled:
-	 *  1. core/query with inherit:true  — archive pages (category, tag, blog, etc.)
-	 *  2. core/post-content             — singular pages (single posts, pages)
-	 *     FSE single-post templates do not use a core/query block; the main
-	 *     content is rendered via core/post-content, so that is where we inject.
+	 * Three injection points are handled:
+	 *
+	 *  1. core/query (inherit:true) — archive pages (blog, category, tag, etc.)
+	 *     Injects before_content + before BEFORE the block, after AFTER the block.
+	 *     Works because the Query block is the first content element after the
+	 *     header template part on archive templates.
+	 *
+	 *  2. core/template-part (slug/area = "header") on singular pages
+	 *     Injects before_content AFTER the header template part — this is the
+	 *     true "after header, before page content" position. Runs before any
+	 *     post-specific blocks (title, featured image, etc.) are rendered.
+	 *
+	 *  3. core/post-content on singular pages
+	 *     Injects before BEFORE the block, after AFTER the block — so sections
+	 *     appear immediately before/after the post body text, not the featured
+	 *     image or title blocks that precede it in the template.
 	 *
 	 * @param string $block_content Rendered block HTML.
 	 * @param array  $block         Parsed block data.
@@ -272,9 +282,9 @@ class KCAS_Frontend
 			$after  = '';
 
 			foreach ($locations as $loc) {
-				// 'before_content' on FSE themes: the Query block is already the first
-				// content after the header template part, so injecting before it is
-				// structurally equivalent to "after header". Merge with 'before' output.
+				// 'before_content' on FSE archive templates: the Query block is the
+				// first content element after the header template part, so injecting
+				// before it is structurally equivalent to "after header".
 				$before .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
 				$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
 				$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
@@ -288,9 +298,46 @@ class KCAS_Frontend
 			return $before . $block_content . $after;
 		}
 
-		// ── Path 2: singular pages via core/post-content ──────────────────────────
+		// ── Path 2: "after header" on singular FSE pages ─────────────────────────
+		// Inject before_content immediately after the header template part so the
+		// section appears between the site header and the post title / featured
+		// image — not buried after them.
+		if ('core/template-part' === $block_name && is_singular()) {
+			$slug = isset($block['attrs']['slug']) ? $block['attrs']['slug'] : '';
+			$area = isset($block['attrs']['area']) ? $block['attrs']['area'] : '';
+
+			if ('header' !== $slug && 'header' !== $area) {
+				return $block_content;
+			}
+
+			static $header_injected = false;
+			if ($header_injected) {
+				return $block_content;
+			}
+
+			$locations = $this->resolve_locations();
+			if (empty($locations)) {
+				return $block_content;
+			}
+
+			$after_header = '';
+			foreach ($locations as $loc) {
+				$after_header .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
+			}
+
+			if (! $after_header) {
+				return $block_content;
+			}
+
+			$header_injected = true;
+			return $block_content . $after_header;
+		}
+
+		// ── Path 3: before/after post body on singular FSE pages ─────────────────
+		// core/post-content renders the post body text. Sections with position
+		// 'before' or 'after' wrap this block — NOT the featured image or title
+		// blocks that appear earlier in the template.
 		if ('core/post-content' === $block_name && is_singular()) {
-			// Only fire once per page load.
 			static $singular_injected = false;
 			if ($singular_injected) {
 				return $block_content;
@@ -305,7 +352,6 @@ class KCAS_Frontend
 			$after  = '';
 
 			foreach ($locations as $loc) {
-				$before .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
 				$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
 				$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
 			}
