@@ -7,7 +7,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [1.1.1] — 2026-05-22
 
 ### Fixed
 
@@ -96,5 +96,6 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+[1.1.1]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/wpkayce/kayce-custom-archive-sections/releases/tag/v1.0.0

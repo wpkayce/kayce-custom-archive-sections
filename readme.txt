@@ -4,7 +4,7 @@ Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -144,6 +144,16 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 
 == Changelog ==
 
+= 1.1.1 =
+**Bug fixes**
+
+* Fixed sections with the Single Post location not appearing on FSE / block themes — the render_block filter now targets `core/post-content` in addition to `core/query`.
+* Fixed After Header and Before Posts positions on FSE singular pages injecting between the featured image and post body. Both positions now inject after the header template part, before the post title and featured image.
+* Fixed section design breaking on every other page load. WordPress generates dynamic layout class names (`wp-container-*-is-layout-N`) that increment globally; caching rendered HTML caused class/CSS mismatches on subsequent requests. The cache now stores raw section data and blocks are rendered fresh on each request.
+* Fixed post content disappearing after sections were rendered — missing `wp_reset_postdata()` call after the section rendering loop.
+* Fixed stale section output after switching themes — cache is now busted automatically on `switch_theme`.
+* Fixed After Header sections on classic themes with a sidebar (e.g. ColorMag) remaining inside the primary content column. The JS repositioner now loops until stable, correctly lifting the section to full-width outside the columns row.
+
 = 1.1.0 =
 **New positions**
 
@@ -206,6 +216,9 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 * `uninstall.php` for clean removal.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Bug fix release — resolves section display issues on FSE / block themes (single posts, After Header position, layout style breaking on reload), post content disappearing after sections render, stale output after theme switch, and After Header sections staying inside the sidebar column on ColorMag and similar themes.
 
 = 1.1.0 =
 Major feature update — adds a new After Header position with cross-theme support, Quick Edit, bulk actions, sortable columns, a Settings page for cache control, single-post support, a fully redesigned meta box UI, and fixes for dynamic block context on single posts and archive pages. No data migration or manual steps required; simply update and activate.
