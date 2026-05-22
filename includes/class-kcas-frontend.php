@@ -81,7 +81,7 @@ class KCAS_Frontend
 	 */
 	public function enqueue_frontend_assets()
 	{
-		if (! is_home() && ! is_category() && ! is_tag() && ! is_author() && ! is_search() && ! is_date() && ! is_single()) {
+		if (! is_home() && ! is_category() && ! is_tag() && ! is_author() && ! is_search() && ! is_date() && ! is_singular()) {
 			return;
 		}
 
@@ -232,7 +232,14 @@ class KCAS_Frontend
 	// =========================================================================
 
 	/**
-	 * Wrap the core/query block with archive sections (block/FSE themes).
+	 * Wrap the core/query or core/post-content block with archive sections
+	 * (block/FSE themes).
+	 *
+	 * Two cases handled:
+	 *  1. core/query with inherit:true  — archive pages (category, tag, blog, etc.)
+	 *  2. core/post-content             — singular pages (single posts, pages)
+	 *     FSE single-post templates do not use a core/query block; the main
+	 *     content is rendered via core/post-content, so that is where we inject.
 	 *
 	 * @param string $block_content Rendered block HTML.
 	 * @param array  $block         Parsed block data.
@@ -240,45 +247,78 @@ class KCAS_Frontend
 	 */
 	public function inject_around_query_block($block_content, $block)
 	{
-		if ('core/query' !== $block['blockName']) {
-			return $block_content;
+		$block_name = isset($block['blockName']) ? $block['blockName'] : '';
+
+		// ── Path 1: archive pages via core/query (inherit:true) ──────────────────
+		if ('core/query' === $block_name) {
+			// Only wrap Query blocks that inherit the main archive query.
+			if (empty($block['attrs']['query']['inherit'])) {
+				return $block_content;
+			}
+
+			// Prevent injecting sections more than once per page load — some FSE themes
+			// place multiple core/query blocks with inherit:true on the same archive page.
+			static $archive_injected = false;
+			if ($archive_injected) {
+				return $block_content;
+			}
+
+			$locations = $this->resolve_locations();
+			if (empty($locations)) {
+				return $block_content;
+			}
+
+			$before = '';
+			$after  = '';
+
+			foreach ($locations as $loc) {
+				// 'before_content' on FSE themes: the Query block is already the first
+				// content after the header template part, so injecting before it is
+				// structurally equivalent to "after header". Merge with 'before' output.
+				$before .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
+				$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
+				$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
+			}
+
+			if (! $before && ! $after) {
+				return $block_content;
+			}
+
+			$archive_injected = true;
+			return $before . $block_content . $after;
 		}
 
-		// Only wrap Query blocks that inherit the main archive query.
-		if (empty($block['attrs']['query']['inherit'])) {
-			return $block_content;
+		// ── Path 2: singular pages via core/post-content ──────────────────────────
+		if ('core/post-content' === $block_name && is_singular()) {
+			// Only fire once per page load.
+			static $singular_injected = false;
+			if ($singular_injected) {
+				return $block_content;
+			}
+
+			$locations = $this->resolve_locations();
+			if (empty($locations)) {
+				return $block_content;
+			}
+
+			$before = '';
+			$after  = '';
+
+			foreach ($locations as $loc) {
+				$before .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
+				$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
+				$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
+			}
+
+			if (! $before && ! $after) {
+				return $block_content;
+			}
+
+			$singular_injected = true;
+			return $before . $block_content . $after;
 		}
 
-		// Prevent injecting sections more than once per page load — some FSE themes
-		// place multiple core/query blocks with inherit:true on the same archive page.
-		static $injected = false;
-		if ($injected) {
-			return $block_content;
-		}
-
-		$locations = $this->resolve_locations();
-		if (empty($locations)) {
-			return $block_content;
-		}
-
-		$before = '';
-		$after  = '';
-
-		foreach ($locations as $loc) {
-			// 'before_content' on FSE themes: the Query block is already the first
-			// content after the header template part, so injecting before it is
-			// structurally equivalent to "after header". Merge with 'before' output.
-			$before .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
-			$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
-			$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
-		}
-
-		if (! $before && ! $after) {
-			return $block_content;
-		}
-
-		$injected = true;
-		return $before . $block_content . $after;
+		return $block_content;
 	}
 
 	// =========================================================================
