@@ -4,7 +4,7 @@ Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,33 +145,47 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 == Changelog ==
 
 = 1.1.0 =
+**New positions**
+
+* Added **After header** (`before_content`) position — injects the section between the site header and the page content area, outside the posts grid.
+* Theme-specific hook cascade fires in the structurally correct location for Astra, Genesis Framework, OceanWP, Kadence, Neve, WooCommerce Storefront, Hestia, ColorMag, Blocksy, Hello Elementor, Divi, and Enfold.
+* JavaScript safety net automatically repositions sections that land inside a posts-loop container on unsupported classic themes (detects `article` siblings, moves section before the grid with no page reload).
+* Position field in the meta box is now hidden when Location is set to Disabled — no confusing options for inactive sections.
+* Visibility options now display one option per row for full readability in the narrow sidebar meta box.
+
 **New features**
 
 * **Quick Edit** — update Active, Position, and Visibility directly from the list table without opening the edit screen.
 * **Bulk actions** — activate or deactivate multiple sections at once from the list table.
-* **Sortable columns** — click Active, Location, Position, or Visibility column headers to sort the list table.
+* **Sortable columns** — Active, Location, Position, and Visibility column headers are all sortable.
 * **Settings page** (Archive Sections → Settings) — configure transient cache expiry (0–168 hours); set to 0 to disable caching entirely.
-* **Activation welcome notice** — a one-time admin notice with a direct link to create the first section appears after plugin activation.
-* **Single post support** — sections can now be targeted to individual post pages (`is_single()`), not just archive pages.
+* **Activation welcome notice** — a one-time admin notice appears after activation with a direct link to create the first section.
+* **Single post support** — sections can now target individual post pages (`is_single()`), not just archive pages.
 
-**UI improvements**
+**Admin UI redesign**
 
-* Redesigned **Archive Section Settings** meta box with a CSS toggle switch for Active, a two-column Dashicon card grid for Location, segmented button groups for Position and Visibility, and a styled full-width Preview button.
-* Category picker now includes a **live search / filter** input with a leading search icon.
-* Category list items show a post-count badge; checked items are highlighted.
-* **Friendly empty state** card shown in the list table when no sections exist yet, with a direct "Create your first section" call-to-action.
+* Archive Section Settings meta box fully redesigned: CSS toggle switch for Active state, two-column Dashicon card grid for Location, segmented button groups for Position and Visibility, styled category search with a leading icon, and a full-width Preview button.
+* Category list items show a post-count badge; checked items are highlighted in blue.
+* Friendly empty-state card with a Create CTA shown when no sections exist yet.
+
+**Dynamic block context fixes**
+
+* On single posts and static pages: dynamic blocks (`core/post-title`, `core/post-excerpt`, `core/post-featured-image`, etc.) now correctly resolve against the viewed post rather than the section post itself.
+* On archive pages (category, tag, author, search, date): post-specific blocks return empty rather than showing the section's own data; archive-aware blocks (`core/archive-title`, `core/term-description`) are unaffected.
+* Cache for the `single_post` location now includes the viewed post ID in the cache key, so each post gets its own cached copy.
 
 **Bug fixes**
 
-* FSE / block themes: fixed duplicate section output on pages using the Query Loop block — sections are now injected once per page load.
-* Cache: `single_post` location was missing from the cache locations list, causing cache-bust gaps on deactivation and uninstall.
-* Frontend assets (`frontend.css`) are now enqueued only on archive and singular pages, not globally.
+* FSE / block themes: fixed duplicate section injection on pages that render multiple Query Loop blocks with `inherit: true`.
+* Cache: `single_post` was missing from the locations list used during cache bust and `uninstall.php` cleanup.
+* Frontend assets now enqueued only on archive and singular pages — zero overhead on all other pages.
 
 **Developer / i18n**
 
-* All user-facing strings are now wrapped in the `kayce-custom-archive-sections` text domain.
+* All user-facing strings wrapped in the `kayce-custom-archive-sections` text domain.
 * Added `languages/kayce-custom-archive-sections.pot` template for translators.
-* Full CPT label set added (`archives`, `attributes`, `items_list`, `items_list_navigation`, etc.).
+* Full CPT label set: `archives`, `attributes`, `items_list`, `items_list_navigation`, `filter_items_list`, and more.
+* New frontend script (`frontend.js`) enqueued only on relevant pages; sections expose `kcas-archive-sections--before_content` class for custom CSS targeting.
 
 = 1.0.0 =
 * Initial release.
@@ -194,7 +208,7 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 == Upgrade Notice ==
 
 = 1.1.0 =
-Feature update — adds Quick Edit, bulk actions, sortable columns, a Settings page for cache control, single-post support, and a redesigned meta box UI. No data migration required; simply update and activate.
+Major feature update — adds a new After Header position with cross-theme support, Quick Edit, bulk actions, sortable columns, a Settings page for cache control, single-post support, a fully redesigned meta box UI, and fixes for dynamic block context on single posts and archive pages. No data migration or manual steps required; simply update and activate.
 
 = 1.0.0 =
 Initial release — no upgrade steps required.
