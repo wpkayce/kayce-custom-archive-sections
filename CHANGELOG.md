@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **FSE / block themes — single post sections not appearing**: sections with the `single_post` location were silently skipped on FSE themes because the `render_block` filter only targeted `core/query` (archive templates). Extended to also target `core/post-content` so sections inject correctly on single post and page templates.
+- **FSE / block themes — "After Header" on singular pages**: position was injecting before `core/post-content`, which landed the section between the featured image and the post body. Fixed by targeting the header `core/template-part` block instead — section now appears between the site header and the post title/featured image.
+- **FSE / block themes — "Before Posts" on singular pages**: now also injects at the header template part level (same as After Header), so it appears before the title and featured image rather than mid-post.
+- **All themes — section design breaking on every other page load**: WordPress generates dynamic layout class names (e.g. `wp-container-*-is-layout-N`) whose counter increments globally across blocks on the page. Caching the rendered HTML meant the class names in cache never matched the CSS output to `wp_footer` on the next request. Fixed by caching only the raw section data (post IDs + block markup) and always rendering blocks fresh per request, so class names and CSS are always in sync.
+- **All themes — post content disappearing after sections rendered**: missing `wp_reset_postdata()` after the section rendering loop left `$GLOBALS['post']` pointing at the last `kcas_section` post; the theme then read the wrong post for its own output. Reset call restored.
+- **Theme switch — stale section output**: switching the active theme left transient-cached section HTML rendered under the old theme's block styles. Cache is now busted automatically on `switch_theme`.
+- **Classic themes with sidebar (e.g. ColorMag) — "After Header" inside column**: the JS repositioner ran a single pass, moving the section from inside the posts loop to `#cm-primary` but stopping there — still inside the column layout. Repositioner now loops until the section stops moving, correctly lifting it outside the columns row to full-width.
+
+---
+
 ## [1.1.0] — 2026-05-22
 
 ### Added

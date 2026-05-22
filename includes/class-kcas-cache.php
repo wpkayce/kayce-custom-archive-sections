@@ -63,9 +63,14 @@ class KCAS_Cache
 
 		// Bust on any lifecycle event that could change what's displayed.
 		add_action('save_post_' . $this->post_type, array($this, 'bust_for_section'), 20);
-		add_action('delete_post',   array($this, 'bust_for_section'));
-		add_action('trashed_post',  array($this, 'bust_for_section'));
+		add_action('delete_post',    array($this, 'bust_for_section'));
+		add_action('trashed_post',   array($this, 'bust_for_section'));
 		add_action('untrashed_post', array($this, 'bust_for_section'));
+
+		// Bust everything when the active theme changes — cached HTML is rendered
+		// with the old theme's block styles and template context, so it must be
+		// discarded immediately on theme switch.
+		add_action('switch_theme', array('KCAS_Cache', 'bust_all'));
 	}
 
 	// -------------------------------------------------------------------------

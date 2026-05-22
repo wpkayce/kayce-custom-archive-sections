@@ -1,20 +1,51 @@
 /**
  * Frontend JS for Kayce Custom Archive Sections.
  *
- * Handles one job: if a `before_content` section ended up inside a posts-loop
- * container (because no theme-specific hook fired and the fallback placed it
- * at loop_start), move it to *before* that container.
+ * Repositions `before_content` sections that ended up in the wrong DOM
+ * position when no theme-specific PHP hook fired at the correct level.
  *
- * This covers any classic theme not in the PHP hook cascade — ColorMag,
- * GeneratePress, Blocksy without the action hook, custom themes, etc.
+ * The function runs in a loop per section so that a single pass can handle
+ * multi-step repositioning. Example: on ColorMag the fallback loop_start hook
+ * places the section inside `.cm-posts`; one pass moves it before `.cm-posts`
+ * (now inside `#cm-primary`); the next pass detects the sidebar sibling and
+ * moves it before the `.cm-row` columns container — full width, outside both
+ * the primary column and the sidebar.
  *
- * Detection: a section needs repositioning only when its direct parent also
- * contains <article> children, which indicates it landed inside the posts grid.
- * When a theme hook placed it correctly (outside the grid), no articles will
- * be siblings and we leave it alone.
+ * Two conditions trigger a move on each pass:
+ *
+ *  Case 1 — Inside a posts-loop container.
+ *    Detection: parent has direct <article> children.
+ *    Move: section → before its parent.
+ *
+ *  Case 2 — Inside a primary column next to a sidebar.
+ *    Detection: parent's parent (the row) has a child that is a sidebar /
+ *    complementary area (ARIA role, or id/class patterns).
+ *    Move: section → before the row, so it becomes full-width.
+ *
+ * When a theme hook already placed the section correctly (e.g. Astra's
+ * astra_header_after, or the FSE PHP path), neither condition triggers and
+ * the loop exits immediately, leaving the section untouched.
  */
 ( function () {
 	'use strict';
+
+	/**
+	 * Return true if the element looks like a sidebar / complementary area.
+	 *
+	 * @param {Element} el
+	 * @return {boolean}
+	 */
+	function isSidebarElement( el ) {
+		if ( ! el ) {
+			return false;
+		}
+		if ( el.getAttribute( 'role' ) === 'complementary' ) {
+			return true;
+		}
+		var id  = el.id || '';
+		var cls = typeof el.className === 'string' ? el.className : '';
+		return /\b(secondary|sidebar|widget-area|cm-secondary|aside)\b/i.test( id + ' ' + cls );
+	}
 
 	function repositionBeforeContentSections() {
 		var sections = document.querySelectorAll( '.kcas-archive-sections--before_content' );
@@ -23,33 +54,62 @@
 		}
 
 		sections.forEach( function ( section ) {
-			var parent = section.parentElement;
-			if ( ! parent ) {
-				return;
-			}
+			// Loop until no move was made in a full pass, or a safety limit is hit.
+			var maxPasses = 8;
 
-			// Check if the parent is a posts loop wrapper by looking for
-			// direct <article> children — a reliable signal across all themes.
-			var articles = parent.querySelectorAll( ':scope > article' );
-			if ( ! articles.length ) {
-				// Section is already outside the loop — correctly placed. Do nothing.
-				return;
-			}
+			for ( var pass = 0; pass < maxPasses; pass++ ) {
+				var parent = section.parentElement;
+				if ( ! parent ) {
+					break;
+				}
 
-			// The section landed inside the posts container. Move it to just
-			// before that container so it sits between the archive header and posts.
-			var grandParent = parent.parentElement;
-			if ( grandParent ) {
-				grandParent.insertBefore( section, parent );
+				// ── Case 1: section is inside a posts-loop container ──────────────
+				var articles = parent.querySelectorAll( ':scope > article' );
+				if ( articles.length ) {
+					var grandParent = parent.parentElement;
+					if ( grandParent ) {
+						grandParent.insertBefore( section, parent );
+						// Continue the loop — the new position may still need fixing.
+						continue;
+					}
+					break;
+				}
+
+				// ── Case 2: section is inside a column next to a sidebar ──────────
+				var row = parent.parentElement;
+				if ( ! row ) {
+					break;
+				}
+
+				var hasSidebarSibling = false;
+				var children = row.children;
+				for ( var i = 0; i < children.length; i++ ) {
+					if ( children[ i ] !== parent && isSidebarElement( children[ i ] ) ) {
+						hasSidebarSibling = true;
+						break;
+					}
+				}
+
+				if ( hasSidebarSibling ) {
+					var rowParent = row.parentElement;
+					if ( rowParent ) {
+						rowParent.insertBefore( section, row );
+						// Continue the loop — check if the new position also needs fixing.
+						continue;
+					}
+					break;
+				}
+
+				// Neither condition triggered — section is correctly placed. Stop.
+				break;
 			}
 		} );
 	}
 
-	// Run before the first paint to minimise layout shift.
+	// Run before first paint to minimise layout shift.
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', repositionBeforeContentSections );
 	} else {
-		// DOM is already ready (script loaded late / deferred).
 		repositionBeforeContentSections();
 	}
 

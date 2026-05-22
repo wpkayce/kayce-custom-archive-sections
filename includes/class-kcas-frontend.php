@@ -168,8 +168,8 @@ class KCAS_Frontend
 			'storefront_after_header',         // WooCommerce Storefront
 			'hestia_after_header',             // Hestia
 			'bimber_site_after_header',        // Bimber
-			'colormag_before_primary_content', // ColorMag (ThemeGrill)
-			'tg_before_primary',               // ThemeGrill family fallback
+			'colormag_before_primary_content',  // ColorMag (ThemeGrill) — inside #cm-primary; JS lifts to full-width
+			'tg_before_primary',                // ThemeGrill family fallback
 			'blocksy:header:after',            // Blocksy
 			'hello_elementor_after_header',    // Hello Elementor
 			'divi_after_header',               // Divi
@@ -298,10 +298,15 @@ class KCAS_Frontend
 			return $before . $block_content . $after;
 		}
 
-		// ── Path 2: "after header" on singular FSE pages ─────────────────────────
-		// Inject before_content immediately after the header template part so the
-		// section appears between the site header and the post title / featured
-		// image — not buried after them.
+		// ── Path 2: "after header" + "before posts" on singular FSE pages ──────────
+		// On FSE single-post templates the featured image and post title/meta blocks
+		// sit between the header template part and core/post-content. Injecting
+		// before core/post-content therefore lands between the featured image and
+		// the post body — not what "before posts" means to a user.
+		//
+		// Instead we inject BOTH before_content and before sections right after
+		// the header template part (before the title, featured image, everything).
+		// Only the 'after' position stays anchored to core/post-content.
 		if ('core/template-part' === $block_name && is_singular()) {
 			$slug = isset($block['attrs']['slug']) ? $block['attrs']['slug'] : '';
 			$area = isset($block['attrs']['area']) ? $block['attrs']['area'] : '';
@@ -322,7 +327,10 @@ class KCAS_Frontend
 
 			$after_header = '';
 			foreach ($locations as $loc) {
+				// Both "After header" and "Before posts" inject here on singular pages —
+				// right after the site header, before the post title and featured image.
 				$after_header .= $this->get_sections_html($loc['location'], 'before_content', $loc['extra']);
+				$after_header .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
 			}
 
 			if (! $after_header) {
@@ -333,10 +341,9 @@ class KCAS_Frontend
 			return $block_content . $after_header;
 		}
 
-		// ── Path 3: before/after post body on singular FSE pages ─────────────────
-		// core/post-content renders the post body text. Sections with position
-		// 'before' or 'after' wrap this block — NOT the featured image or title
-		// blocks that appear earlier in the template.
+		// ── Path 3: "after posts" on singular FSE pages ───────────────────────────
+		// Only the 'after' position hooks onto core/post-content — it appears right
+		// below the post body text, above the comments/navigation blocks.
 		if ('core/post-content' === $block_name && is_singular()) {
 			static $singular_injected = false;
 			if ($singular_injected) {
@@ -348,20 +355,17 @@ class KCAS_Frontend
 				return $block_content;
 			}
 
-			$before = '';
-			$after  = '';
-
+			$after = '';
 			foreach ($locations as $loc) {
-				$before .= $this->get_sections_html($loc['location'], 'before', $loc['extra']);
-				$after  .= $this->get_sections_html($loc['location'], 'after',  $loc['extra']);
+				$after .= $this->get_sections_html($loc['location'], 'after', $loc['extra']);
 			}
 
-			if (! $before && ! $after) {
+			if (! $after) {
 				return $block_content;
 			}
 
 			$singular_injected = true;
-			return $before . $block_content . $after;
+			return $block_content . $after;
 		}
 
 		return $block_content;
@@ -429,13 +433,23 @@ class KCAS_Frontend
 	/**
 	 * Build and return the HTML for all sections matching a location + position.
 	 *
-	 * Checks the transient cache first. On a miss, runs the WP_Query,
-	 * applies visibility filters, builds the HTML, and stores it in cache.
+	 * Caching strategy — two-phase:
 	 *
-	 * Developer hooks are applied at every key stage (feature 5).
+	 *   Phase 1 (cached): WP_Query results — section post IDs and raw block
+	 *   markup. This is stored in a transient to eliminate repeated DB queries.
+	 *
+	 *   Phase 2 (always fresh): block rendering — apply_filters('the_content')
+	 *   is called on every request, never cached. This is intentional: WordPress
+	 *   generates dynamic layout class names (e.g. wp-container-*-is-layout-N)
+	 *   whose counter increments across blocks on the page. The corresponding CSS
+	 *   is output to wp_footer in the same request. If rendered HTML is cached and
+	 *   served on a later request, the class names no longer match the CSS — the
+	 *   layout breaks. Rendering fresh each time keeps class names and CSS in sync.
+	 *
+	 * Developer hooks are applied at every key stage.
 	 *
 	 * @param string $location One of the supported location slugs.
-	 * @param string $position 'before' or 'after'.
+	 * @param string $position 'before_content', 'before', or 'after'.
 	 * @param string $extra    Extra cache-key context (e.g. category ID).
 	 * @return string HTML string, or empty string if nothing to show.
 	 */
@@ -460,27 +474,44 @@ class KCAS_Frontend
 			return '';
 		}
 
-		// ── Cache check (feature 3a) ──────────────────────────────────────────
-		$cached = KCAS_Cache::get($location, $position, $extra);
-		if (false !== $cached) {
-			return $cached;
+		// ── Phase 1: query cache ──────────────────────────────────────────────
+		// Returns an array of ['id' => int, 'content' => string], or false on miss.
+		$sections_data = KCAS_Cache::get($location, $position, $extra);
+
+		if (false === $sections_data) {
+			// ── Developer hook: allow query arg modification (feature 5) ──────
+			$query_args = apply_filters(
+				'kcas_query_args',
+				$this->build_query_args($location, $position),
+				$location,
+				$position
+			);
+
+			$sections_query = new WP_Query($query_args);
+			$sections_data  = array();
+
+			if ($sections_query->have_posts()) {
+				while ($sections_query->have_posts()) {
+					$sections_query->the_post();
+					$sections_data[] = array(
+						'id'      => get_the_ID(),
+						'content' => get_the_content(),
+					);
+				}
+				wp_reset_postdata();
+			}
+
+			// Cache the data array (empty array for no results is a valid cache hit).
+			KCAS_Cache::set($location, $position, $sections_data, $extra);
 		}
 
-		// ── Developer hook: allow query arg modification (feature 5) ─────────
-		$query_args = apply_filters(
-			'kcas_query_args',
-			$this->build_query_args($location, $position),
-			$location,
-			$position
-		);
-
-		$sections_query = new WP_Query($query_args);
-
-		if (! $sections_query->have_posts()) {
-			// Cache the empty result too, to avoid repeated DB hits.
-			KCAS_Cache::set($location, $position, '', $extra);
+		if (empty($sections_data)) {
 			return '';
 		}
+
+		// ── Phase 2: render fresh ─────────────────────────────────────────────
+		// Blocks are rendered on every request so WordPress's dynamic layout
+		// class names (and their matching inline CSS) are always in sync.
 
 		// ── Developer action: fires before any sections HTML (feature 5) ─────
 		ob_start();
@@ -489,37 +520,34 @@ class KCAS_Frontend
 
 		$inner = '';
 
-		while ($sections_query->have_posts()) {
-			$sections_query->the_post();
-			$post_id      = get_the_ID();
-			$section_post = get_post(); // The kcas_section post — saved for restoration.
+		foreach ($sections_data as $section_data) {
+			$post_id      = (int) $section_data['id'];
+			$section_post = get_post($post_id);
+
+			if (! $section_post || 'publish' !== $section_post->post_status) {
+				continue;
+			}
 
 			// ── Visibility check (feature 1e) ─────────────────────────────────
 			if (! $this->passes_visibility_check($post_id)) {
 				continue;
 			}
 
-			// ── Build section content ─────────────────────────────────────────
-			$content = get_the_content();
+			$content = $section_data['content'];
 
 			// ── Dynamic block context ──────────────────────────────────────────
 			// Dynamic blocks read post data from either:
 			//   (a) the global $post             — classic / fallback path
 			//   (b) $block->context['postId']    — block context path (Gutenberg)
 			//
-			// While iterating our sections query, $post is the kcas_section post,
-			// so without intervention those blocks show the section's own data.
+			// While iterating our sections data, $post is undefined / stale.
 			//
-			// Singular pages (single posts, pages, attachments):
+			// Singular pages (single posts, pages):
 			//   Swap $post to the viewed post AND inject its ID into block context.
-			//   Covers: core/post-title, core/post-excerpt, core/post-featured-image.
 			//
 			// Archive pages (category, tag, author, search, date, blog index):
-			//   There is no single "current post". Clear postId/postType from block
-			//   context so post-specific blocks return '' instead of the section's
-			//   own data. Archive-aware blocks (core/archive-title, core/term-
-			//   description) read from get_the_archive_title() / get_queried_object()
-			//   and are unaffected by this filter.
+			//   Clear postId/postType from block context so post-specific blocks
+			//   return '' rather than showing unexpected data.
 			$page_context_post    = null;
 			$block_context_filter = null;
 
@@ -540,8 +568,6 @@ class KCAS_Frontend
 					};
 				}
 			} else {
-				// Archive: strip postId so post-specific blocks render '' rather
-				// than showing the kcas_section's own title / excerpt / etc.
 				$block_context_filter = static function ($context) {
 					unset($context['postId'], $context['postType']);
 					return $context;
@@ -552,20 +578,19 @@ class KCAS_Frontend
 				add_filter('render_block_context', $block_context_filter, 5); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			}
 
-			$content = apply_filters('the_content', $content); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- intentionally applying the core WP content filter
+			$content = apply_filters('the_content', $content); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			$content = str_replace(']]>', ']]&gt;', $content);
 
 			if ($block_context_filter) {
 				remove_filter('render_block_context', $block_context_filter, 5); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			}
 
-			// Restore the section post context for the next loop iteration.
 			if ($page_context_post) {
-				$GLOBALS['post'] = $section_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- restoring previous value
+				$GLOBALS['post'] = $section_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- restoring context
 				setup_postdata($section_post);
 			}
 
-			$section_html = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr($post_id) . '">';
+			$section_html  = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr($post_id) . '">';
 			$section_html .= $content;
 			$section_html .= '</section>';
 
@@ -575,14 +600,16 @@ class KCAS_Frontend
 			$inner .= $section_html;
 		}
 
+		// Restore the global $post to the main query's current post.
+		// setup_postdata() was called inside the loop; without this reset the
+		// theme would read the wrong $post and the actual page content disappears.
 		wp_reset_postdata();
 
 		if ('' === $inner) {
-			KCAS_Cache::set($location, $position, '', $extra);
 			return '';
 		}
 
-		$wrapper = '<div class="kcas-archive-sections kcas-archive-sections--' . esc_attr($position) . '">';
+		$wrapper  = '<div class="kcas-archive-sections kcas-archive-sections--' . esc_attr($position) . '">';
 		$wrapper .= $inner;
 		$wrapper .= '</div>';
 
@@ -596,9 +623,7 @@ class KCAS_Frontend
 		// ── Developer filter: full output (feature 5) ─────────────────────────
 		$html = apply_filters('kcas_sections_html', $html, $location, $position);
 
-		// ── Store in cache (feature 3a) ───────────────────────────────────────
-		KCAS_Cache::set($location, $position, $html, $extra);
-
+		// Rendered HTML is intentionally NOT cached — see docblock above.
 		return $html;
 	}
 
