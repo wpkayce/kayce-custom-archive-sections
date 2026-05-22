@@ -81,7 +81,17 @@ class KCAS_Frontend
 	 */
 	public function enqueue_frontend_assets()
 	{
-		if (! is_home() && ! is_category() && ! is_tag() && ! is_author() && ! is_search() && ! is_date() && ! is_singular()) {
+		if (
+			! is_home() &&
+			! is_front_page() &&
+			! is_category() &&
+			! is_tag() &&
+			! is_author() &&
+			! is_search() &&
+			! is_date() &&
+			! is_post_type_archive() &&
+			! is_singular()
+		) {
 			return;
 		}
 
@@ -376,30 +386,91 @@ class KCAS_Frontend
 	// =========================================================================
 
 	/**
-	 * Determine which location slugs apply to the current archive page.
+	 * Determine which location slugs apply to the current page.
 	 *
 	 * Returns an array of arrays, each with:
 	 *  - 'location' string  The location slug to query.
 	 *  - 'extra'    string  Extra context for the cache key (e.g. category ID).
 	 *
+	 * Checks are ordered from most-specific to least-specific so that a page
+	 * that satisfies multiple conditions (e.g. is_front_page() + is_home()) is
+	 * matched by the right slug first.
+	 *
 	 * @return array
 	 */
 	private function resolve_locations()
 	{
+		// ── Static front page ─────────────────────────────────────────────────
+		// Must come before is_page() — the front page satisfies both conditions.
+		if (is_front_page() && ! is_home()) {
+			$page_id = (int) get_queried_object_id();
+			return array(
+				array('location' => 'front_page',      'extra' => ''),
+				array('location' => 'all_pages',        'extra' => ''),
+				array('location' => 'specific_pages',   'extra' => (string) $page_id),
+			);
+		}
+
+		// ── Blog index ────────────────────────────────────────────────────────
 		if (is_home()) {
 			return array(array('location' => 'blog_index', 'extra' => ''));
 		}
 
+		// ── Category archives ─────────────────────────────────────────────────
 		if (is_category()) {
 			$cat_id = (int) get_queried_object_id();
 			return array(
-				// Sections assigned to ALL category archives.
 				array('location' => 'category_archives',   'extra' => ''),
-				// Sections assigned to SPECIFIC categories (filtered by cat ID).
 				array('location' => 'specific_categories', 'extra' => (string) $cat_id),
 			);
 		}
 
+		// ── Tag archives ──────────────────────────────────────────────────────
+		if (is_tag()) {
+			return array(array('location' => 'tag_archives', 'extra' => ''));
+		}
+
+		// ── Author archives ───────────────────────────────────────────────────
+		if (is_author()) {
+			return array(array('location' => 'author_archives', 'extra' => ''));
+		}
+
+		// ── Search results ────────────────────────────────────────────────────
+		if (is_search()) {
+			return array(array('location' => 'search_results', 'extra' => ''));
+		}
+
+		// ── Date archives ─────────────────────────────────────────────────────
+		if (is_date()) {
+			return array(array('location' => 'date_archives', 'extra' => ''));
+		}
+
+		// ── CPT archives ──────────────────────────────────────────────────────
+		// is_post_type_archive() must come before is_singular() since CPT
+		// archive pages are not singular.
+		if (is_post_type_archive()) {
+			$cpt = get_query_var('post_type');
+			// get_query_var may return an array for multi-type queries.
+			if (is_array($cpt)) {
+				$cpt = reset($cpt);
+			}
+			$cpt = sanitize_key($cpt);
+			return array(
+				array('location' => 'cpt_archives', 'extra' => $cpt),
+			);
+		}
+
+		// ── Static pages ──────────────────────────────────────────────────────
+		// Must come before is_singular() to match page-specific slugs.
+		if (is_page()) {
+			$page_id = (int) get_queried_object_id();
+			return array(
+				array('location' => 'all_pages',      'extra' => ''),
+				array('location' => 'specific_pages', 'extra' => (string) $page_id),
+			);
+		}
+
+		// ── Standard single posts ─────────────────────────────────────────────
 		if (is_single()) {
 			// Include the post ID in the cache key so each post gets its own
 			// cached copy — required because dynamic blocks (e.g. core/post-title)
@@ -407,20 +478,21 @@ class KCAS_Frontend
 			return array(array('location' => 'single_post', 'extra' => (string) get_queried_object_id()));
 		}
 
-		if (is_tag()) {
-			return array(array('location' => 'tag_archives', 'extra' => ''));
-		}
-
-		if (is_author()) {
-			return array(array('location' => 'author_archives', 'extra' => ''));
-		}
-
-		if (is_search()) {
-			return array(array('location' => 'search_results', 'extra' => ''));
-		}
-
-		if (is_date()) {
-			return array(array('location' => 'date_archives', 'extra' => ''));
+		// ── CPT single posts ──────────────────────────────────────────────────
+		// Any singular that is not a standard post, page, or attachment.
+		if (is_singular()) {
+			$queried = get_queried_object();
+			if ($queried instanceof WP_Post) {
+				$cpt = sanitize_key($queried->post_type);
+				if (
+					$cpt &&
+					! in_array($cpt, array('post', 'page', 'attachment', $this->post_type), true)
+				) {
+					return array(
+						array('location' => 'cpt_singles', 'extra' => $cpt),
+					);
+				}
+			}
 		}
 
 		return array();
@@ -464,6 +536,12 @@ class KCAS_Frontend
 			'author_archives',
 			'search_results',
 			'date_archives',
+			// v1.2.0
+			'front_page',
+			'all_pages',
+			'specific_pages',
+			'cpt_archives',
+			'cpt_singles',
 		);
 		$allowed_positions = array('before_content', 'before', 'after');
 
@@ -679,15 +757,23 @@ class KCAS_Frontend
 	}
 
 	/**
-	 * Check whether the current visitor matches the section's visibility setting
-	 * and — for specific_categories — whether the current category is selected.
+	 * Check whether the current visitor and page context match the section's
+	 * settings. Returns false (hide) if any check fails, true (show) otherwise.
 	 *
-	 * @param int $post_id Section post ID (current post in the loop).
-	 * @return bool True if the section should be displayed.
+	 * Checks performed:
+	 *  1. Login-state visibility (everyone / logged-in / logged-out).
+	 *  2. Specific-item matching for picker-based locations:
+	 *       specific_categories — current category in the saved cat IDs list.
+	 *       specific_pages      — current page in the saved page IDs list.
+	 *       cpt_archives        — current CPT matches the saved CPT slug.
+	 *       cpt_singles         — current post type matches the saved CPT slug.
+	 *
+	 * @param int $post_id Section post ID.
+	 * @return bool
 	 */
 	private function passes_visibility_check($post_id)
 	{
-		// ── Login-state check (feature 1e) ────────────────────────────────────
+		// ── 1. Login-state check ──────────────────────────────────────────────
 		$visibility = get_post_meta($post_id, $this->meta_visibility, true);
 
 		if ('logged_in' === $visibility && ! is_user_logged_in()) {
@@ -698,14 +784,48 @@ class KCAS_Frontend
 			return false;
 		}
 
-		// ── Specific-category check ───────────────────────────────────────────
+		// ── 2. Specific-item checks ───────────────────────────────────────────
 		$location = get_post_meta($post_id, $this->meta_location, true);
 
+		// Specific categories — current category ID must be in the saved list.
 		if ('specific_categories' === $location && is_category()) {
-			$saved_cats  = get_post_meta($post_id, $this->meta_categories, true);
-			$current_cat = (int) get_queried_object_id();
+			$saved  = get_post_meta($post_id, $this->meta_categories, true);
+			$cur_id = (int) get_queried_object_id();
+			if (! is_array($saved) || ! in_array($cur_id, array_map('intval', $saved), true)) {
+				return false;
+			}
+		}
 
-			if (! is_array($saved_cats) || ! in_array($current_cat, array_map('intval', $saved_cats), true)) {
+		// Specific pages — current page ID must be in the saved list.
+		if ('specific_pages' === $location && is_page()) {
+			$saved  = get_post_meta($post_id, '_kcas_pages', true);
+			$cur_id = (int) get_queried_object_id();
+			if (! is_array($saved) || ! in_array($cur_id, array_map('intval', $saved), true)) {
+				return false;
+			}
+		}
+
+		// CPT archives — saved CPT slug must match the current archive's post type.
+		if ('cpt_archives' === $location && is_post_type_archive()) {
+			$saved_cpt   = sanitize_key((string) get_post_meta($post_id, '_kcas_cpt', true));
+			$current_cpt = get_query_var('post_type');
+			if (is_array($current_cpt)) {
+				$current_cpt = reset($current_cpt);
+			}
+			$current_cpt = sanitize_key($current_cpt);
+			if (! $saved_cpt || $saved_cpt !== $current_cpt) {
+				return false;
+			}
+		}
+
+		// CPT singles — saved CPT slug must match the current singular's post type.
+		if ('cpt_singles' === $location && is_singular()) {
+			$saved_cpt = sanitize_key((string) get_post_meta($post_id, '_kcas_cpt', true));
+			$queried   = get_queried_object();
+			if (! $queried instanceof WP_Post) {
+				return false;
+			}
+			if (! $saved_cpt || $saved_cpt !== $queried->post_type) {
 				return false;
 			}
 		}
