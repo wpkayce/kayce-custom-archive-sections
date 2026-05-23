@@ -164,6 +164,25 @@
 	gap: 6px;
 }
 
+/* Group label spanning both columns */
+.kcas-location-group-label {
+	grid-column: 1 / -1;
+	padding: 6px 2px 2px;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: #a7aaad;
+	border-top: 1px solid #f0f0f1;
+	margin-top: 4px;
+}
+
+.kcas-location-group-label:first-child {
+	border-top: 0;
+	margin-top: 0;
+	padding-top: 0;
+}
+
 .kcas-location-card {
 	display: block;
 	cursor: pointer;
@@ -525,4 +544,187 @@
 	height: auto;
 	pointer-events: auto;
 	margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* v1.4.0 — Drag-drop sort handle                                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Column heading — no text, very narrow */
+.column-kcas_sort {
+	width: 32px;
+	padding-left: 8px !important;
+	padding-right: 4px !important;
+}
+
+/* The handle itself — hidden until sortable is initialised */
+.kcas-sort-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	color: #c3c4c7;
+	cursor: default;
+	visibility: hidden; /* shown only once kcas-sortable-active is set */
+	transition: color 0.12s;
+}
+
+/* Reveal handles once jQuery UI sortable is active */
+#the-list.kcas-sortable-active .kcas-sort-handle {
+	visibility: visible;
+	cursor: grab;
+}
+
+#the-list.kcas-sortable-active .kcas-sort-handle:hover,
+#the-list.kcas-sortable-active tr:hover .kcas-sort-handle {
+	color: #2271b1;
+}
+
+.kcas-sort-handle .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+/* Row being dragged */
+tr.kcas-dragging td {
+	background: #f0f6fc !important;
+}
+
+tr.kcas-dragging .kcas-sort-handle {
+	cursor: grabbing !important;
+	color: #2271b1;
+}
+
+/* Placeholder row shown while dragging */
+tr.kcas-sort-placeholder {
+	visibility: visible !important;
+	border: 2px dashed #b3d1ed !important;
+	background: transparent !important;
+}
+
+tr.kcas-sort-placeholder td {
+	padding: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* v1.3.0 — Scheduling                                                        */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-schedule-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.kcas-schedule-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.kcas-schedule-label {
+	display: inline-block;
+	min-width: 30px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #8c8f94;
+}
+
+.kcas-date-input {
+	flex: 1;
+	padding: 5px 7px;
+	font-size: 12px;
+	border: 1.5px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+	color: #1d2327;
+	box-sizing: border-box;
+	min-width: 0;
+}
+
+.kcas-date-input:focus {
+	border-color: #2271b1;
+	outline: none;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* v1.3.0 — Device checkboxes                                                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-devices-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 6px;
+}
+
+.kcas-device-option {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 8px 4px;
+	border-radius: 5px;
+	border: 1.5px solid #dcdcde;
+	background: #fff;
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 500;
+	color: #8c8f94;
+	text-align: center;
+	transition: border-color 0.12s, background 0.12s, color 0.12s;
+	user-select: none;
+}
+
+.kcas-device-option .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	color: #c3c4c7;
+	transition: color 0.12s;
+}
+
+.kcas-device-option:hover {
+	border-color: #2271b1;
+	background: #f6f9fc;
+	color: #2271b1;
+}
+
+.kcas-device-option:hover .dashicons {
+	color: #2271b1;
+}
+
+.kcas-device-option.is-checked {
+	border-color: #2271b1;
+	background: #f0f6fc;
+	color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.kcas-device-option.is-checked .dashicons {
+	color: #2271b1;
+}
+
+/* Re-expose device checkboxes (hidden globally by the shared reset above) */
+.kcas-device-option input[type="checkbox"] {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+	pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* v1.3.0 — Field hint text                                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.kcas-field-hint {
+	margin: 5px 0 0;
+	font-size: 11px;
+	color: #a7aaad;
+	font-style: italic;
 }

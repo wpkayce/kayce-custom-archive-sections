@@ -7,6 +7,83 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.4.0] — 2026-05-22
+
+### Added
+
+**Shortcode — `[kcas_section id="X"]`**
+- Render any published, active section anywhere in WordPress content: posts, pages, widgets, Classic Editor, Gutenberg custom HTML blocks, or any plugin that executes shortcodes.
+- Accepts a single required attribute: `id` — the post ID of the section to render.
+- All display controls are respected: login-state visibility, date scheduling, user role targeting, and device CSS classes are applied exactly as in automatic archive injection.
+- Block context is set correctly: on singular pages, dynamic blocks (`core/post-title`, `core/post-featured-image`, etc.) resolve against the viewed post; on archive/other pages, post-specific blocks return empty rather than leaking section metadata.
+- Output is never cached — the shortcode already runs inside the page's own cached HTML; caching section output separately would cause stale double-caching.
+- The `kcas_section_html` filter fires on shortcode output (position = `'shortcode'`), so developer customisations apply consistently everywhere.
+
+**Drag-drop reordering**
+- A drag-handle column (☰) appears as the first column in the Archive Sections list table.
+- Handles are revealed only once jQuery UI Sortable is initialised — invisible on screens where sorting is not active (e.g. when a column header sort is applied).
+- Drag-drop is automatically disabled when the list is sorted by a column header (`?orderby=…`); reorder by dragging is only meaningful in the default `menu_order` view.
+- Dropping a row saves the new order instantly via AJAX (`wp_ajax_kcas_reorder_sections`) — no page reload required. Each section's `menu_order` is updated to its 0-based visual position.
+- Default list table sort order changed to `menu_order ASC, title ASC` (was WordPress default). This makes the drag-drop order immediately visible without any URL parameter.
+- AJAX handler validates a dedicated nonce (`kcas_reorder`) and `edit_posts` capability; non-KCAS post IDs in the payload are silently skipped.
+
+---
+
+## [1.3.0] — 2026-05-22
+
+### Added
+
+**Display scheduling**
+- New **Schedule** fields in the meta box: optional **From** and **To** date pickers (YYYY-MM-DD, HTML5 `<input type="date">`).
+- Sections outside their date range are silently skipped on the frontend — no code changes needed in themes.
+- Dates are compared against the site's configured WordPress timezone (`current_time('Y-m-d')`), so the admin's notion of "today" always matches the site.
+- Both fields are optional; set only one for open-ended scheduling (e.g. "starts on date X, never expires").
+- Stored as `_kcas_date_from` / `_kcas_date_to` post meta. Validated server-side with `date_create_from_format('Y-m-d')` before saving.
+
+**Device visibility**
+- New **Devices** section in the meta box: three toggle-style checkboxes — **Desktop** (≥ 1025 px), **Tablet** (768–1024 px), **Mobile** (≤ 767 px). All three checked by default (no restriction).
+- Implemented entirely in CSS — deselected devices add `kcas-hide-desktop`, `kcas-hide-tablet`, or `kcas-hide-mobile` classes to the `<section>` element; `frontend.css` hides them via `@media` queries.
+- No server-side user-agent detection — works with page caching, CDNs, and Vary-free setups.
+- Stored as `_kcas_devices` (array of active device slugs).
+
+**User role targeting**
+- New **User roles** section in the meta box: scrollable checklist of all registered WordPress roles, sorted alphabetically.
+- Leave all unchecked for no restriction (existing behaviour preserved). Tick one or more roles to restrict visibility to those roles only.
+- Combines with the existing Visibility setting — a section set to "Logged in" + "Administrator" only shows to logged-in administrators.
+- The roles row is automatically hidden in the meta box when Visibility is set to "Logged-out visitors only" (role checks are irrelevant for logged-out users).
+- Stored as `_kcas_roles` (array of role slugs). Validated against `wp_roles()->roles` before saving.
+
+**Admin UX (v1.3.0)**
+- Scheduling, Devices, and User roles sections all appear below the Visibility setting, separated by dividers.
+- Hint text under each new field explains the default/no-restriction behaviour.
+- Duplicate action copies all four new meta keys to the cloned post.
+
+---
+
+## [1.2.0] — 2026-05-22
+
+### Added
+
+**New locations**
+- **Front page** — targets the static front page (`is_front_page() && !is_home()`). Distinct from the blog index so each can have independent sections.
+- **All pages** — targets every static WordPress page (`is_page()`).
+- **Specific pages** — targets individual pages selected from a searchable page picker in the meta box. Saved as `_kcas_pages` (array of page IDs).
+- **CPT archives** — targets the archive listing page of a specific custom post type. A post-type dropdown appears in the meta box when this location is chosen. Saved as `_kcas_cpt` (CPT slug string).
+- **CPT singles** — targets individual posts of a specific custom post type. Uses the same post-type dropdown as CPT archives.
+
+**Admin UI**
+- Location grid reorganised into four labelled groups: **General** (Disabled, Blog index, Front page), **Archives** (All categories, Specific categories, Tags, Authors, Search, Date), **Singular** (Single posts, All pages, Specific pages), **Custom Post Types** (CPT archives, CPT singles — only shown when public non-built-in CPTs are registered).
+- **Specific Pages picker** — scrollable, searchable checklist (`kcas_pages[]`); shown/hidden via JS when "Specific pages" is selected; mirrors the existing category picker UI.
+- **Post type dropdown** (`kcas_cpt`) — shown/hidden via JS when "CPT archives" or "CPT singles" is selected; lists all public non-built-in CPTs with their singular label and slug.
+- List table Location column now shows labels and hints for all five new locations (specific page titles, CPT singular name).
+- Preview button resolves a relevant URL for every new location type.
+- Duplicate action copies `_kcas_pages` and `_kcas_cpt` meta to the cloned post.
+
+**Cache / uninstall**
+- Five new location slugs added to `KCAS_Cache::LOCATIONS`, version-option busting, and `uninstall.php` cleanup.
+
+---
+
 ## [1.1.1] — 2026-05-22
 
 ### Fixed

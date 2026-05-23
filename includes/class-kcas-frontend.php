@@ -61,6 +61,10 @@ class KCAS_Frontend
 		$this->meta_visibility = $meta_visibility;
 		$this->meta_categories = $meta_categories;
 
+		// Shortcode is registered for all contexts (admin + frontend) so it works
+		// in Gutenberg previews, REST API calls, and Classic Editor previews.
+		add_action('init', array($this, 'register_shortcodes'));
+
 		if (is_admin()) {
 			return;
 		}
@@ -668,7 +672,8 @@ class KCAS_Frontend
 				setup_postdata($section_post);
 			}
 
-			$section_html  = '<section class="kcas-archive-section" id="kcas-section-' . esc_attr($post_id) . '">';
+			$device_class  = $this->get_device_class($post_id);
+			$section_html  = '<section class="kcas-archive-section' . esc_attr($device_class) . '" id="kcas-section-' . esc_attr($post_id) . '">';
 			$section_html .= $content;
 			$section_html .= '</section>';
 
@@ -767,6 +772,10 @@ class KCAS_Frontend
 	 *       specific_pages      — current page in the saved page IDs list.
 	 *       cpt_archives        — current CPT matches the saved CPT slug.
 	 *       cpt_singles         — current post type matches the saved CPT slug.
+	 *  3. (v1.3.0) Schedule — current date must be within the optional date range.
+	 *  4. (v1.3.0) User roles — if roles are set, the visitor must hold at least one.
+	 *
+	 * Device visibility (v1.3.0) is handled via CSS classes — not checked here.
 	 *
 	 * @param int $post_id Section post ID.
 	 * @return bool
@@ -830,6 +839,176 @@ class KCAS_Frontend
 			}
 		}
 
+		// ── 3. Schedule check (v1.3.0) ────────────────────────────────────────
+		// Compare against WordPress's configured timezone so the admin's intuition
+		// of "today" matches the site's timezone, not the server's system clock.
+		$date_from = get_post_meta($post_id, '_kcas_date_from', true);
+		$date_to   = get_post_meta($post_id, '_kcas_date_to',   true);
+
+		if ('' !== $date_from || '' !== $date_to) {
+			$today = current_time('Y-m-d'); // Site timezone.
+			if ('' !== $date_from && $today < $date_from) {
+				return false; // Section hasn't started yet.
+			}
+			if ('' !== $date_to && $today > $date_to) {
+				return false; // Section has expired.
+			}
+		}
+
+		// ── 4. User role check (v1.3.0) ───────────────────────────────────────
+		// If specific roles are set, the visitor must be logged in and hold at
+		// least one of those roles. An empty roles array means no restriction.
+		$roles = get_post_meta($post_id, '_kcas_roles', true);
+
+		if (is_array($roles) && ! empty($roles)) {
+			if (! is_user_logged_in()) {
+				return false; // Role check requires a logged-in user.
+			}
+			$user       = wp_get_current_user();
+			$user_roles = (array) $user->roles;
+			if (empty(array_intersect($roles, $user_roles))) {
+				return false; // None of the user's roles are in the allowed list.
+			}
+		}
+
 		return true;
+	}
+
+	// =========================================================================
+	// Shortcode (v1.4.0)
+	// =========================================================================
+
+	/**
+	 * Register the [kcas_section] shortcode.
+	 *
+	 * Called on 'init' so the shortcode is available in Gutenberg block previews,
+	 * the Classic Editor, REST API, and all frontend contexts.
+	 */
+	public function register_shortcodes()
+	{
+		add_shortcode('kcas_section', array($this, 'render_shortcode'));
+	}
+
+	/**
+	 * Render a single archive section via shortcode.
+	 *
+	 * Usage:
+	 *   [kcas_section id="123"]
+	 *
+	 * The section is rendered exactly as it would appear on the frontend:
+	 *   - Active flag must be '1' (or unset — backward-compatible default).
+	 *   - Login-state, date-range, and role checks from passes_visibility_check() apply.
+	 *   - Location-specific checks (specific categories / pages / CPT) are evaluated
+	 *     against the current page context; on a non-matching page they pass silently,
+	 *     giving the shortcode author full explicit control.
+	 *   - Device CSS classes are applied server-side, identical to automatic injection.
+	 *   - Output is NOT cached — shortcodes are already inside a page's cached HTML.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string Rendered HTML, or empty string if the section should not show.
+	 */
+	public function render_shortcode($atts)
+	{
+		$atts    = shortcode_atts(array('id' => 0), $atts, 'kcas_section');
+		$post_id = absint($atts['id']);
+
+		if (! $post_id) {
+			return '';
+		}
+
+		$section_post = get_post($post_id);
+		if (! $section_post || $section_post->post_type !== $this->post_type) {
+			return '';
+		}
+
+		if ('publish' !== $section_post->post_status) {
+			return '';
+		}
+
+		// Active check: '0' = explicitly inactive; '' or '1' = active.
+		$active = get_post_meta($post_id, $this->meta_active, true);
+		if ('0' === $active) {
+			return '';
+		}
+
+		// Visibility, scheduling, and role checks.
+		if (! $this->passes_visibility_check($post_id)) {
+			return '';
+		}
+
+		// ── Block context (same logic as Phase 2 in get_sections_html) ────────
+		// On singular pages inject the viewed post as block context so dynamic
+		// blocks (core/post-title etc.) resolve correctly against the page.
+		// On archive/other pages clear postId/postType from context.
+		$block_context_filter = null;
+
+		if (is_singular()) {
+			$queried = get_queried_object();
+			if ($queried instanceof WP_Post) {
+				$ctx_id   = $queried->ID;
+				$ctx_type = $queried->post_type;
+
+				$block_context_filter = static function ($context) use ($ctx_id, $ctx_type) {
+					$context['postId']   = $ctx_id;
+					$context['postType'] = $ctx_type;
+					return $context;
+				};
+			}
+		} else {
+			$block_context_filter = static function ($context) {
+				unset($context['postId'], $context['postType']);
+				return $context;
+			};
+		}
+
+		if ($block_context_filter) {
+			add_filter('render_block_context', $block_context_filter, 5); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		}
+
+		$content = apply_filters('the_content', $section_post->post_content); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$content = str_replace(']]>', ']]&gt;', $content);
+
+		if ($block_context_filter) {
+			remove_filter('render_block_context', $block_context_filter, 5); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		}
+
+		$device_class = $this->get_device_class($post_id);
+		$html  = '<section class="kcas-archive-section' . esc_attr($device_class) . '" id="kcas-section-' . esc_attr($post_id) . '">';
+		$html .= $content;
+		$html .= '</section>';
+
+		/** This filter is documented in includes/class-kcas-frontend.php */
+		return apply_filters('kcas_section_html', $html, $post_id, 'shortcode', ''); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+	}
+
+	/**
+	 * Build CSS hide-classes for device targeting (v1.3.0).
+	 *
+	 * Returns a string of space-prefixed class names (e.g. ' kcas-hide-mobile')
+	 * for every device NOT in the section's saved device list.
+	 *
+	 * Applied directly to the <section> element so it always reflects the saved
+	 * meta value — no caching concerns since Phase 2 renders fresh each request.
+	 *
+	 * @param int $post_id Section post ID.
+	 * @return string Space-prefixed class string, or '' for no restriction.
+	 */
+	private function get_device_class($post_id)
+	{
+		$devices = get_post_meta($post_id, '_kcas_devices', true);
+
+		// Empty / non-array = legacy section (pre-v1.3.0) or "all devices" — no restriction.
+		if (! is_array($devices) || empty($devices)) {
+			return '';
+		}
+
+		$hide = array();
+		foreach (array('desktop', 'tablet', 'mobile') as $device) {
+			if (! in_array($device, $devices, true)) {
+				$hide[] = 'kcas-hide-' . $device;
+			}
+		}
+
+		return ! empty($hide) ? ' ' . implode(' ', $hide) : '';
 	}
 }
