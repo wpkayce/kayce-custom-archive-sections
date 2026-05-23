@@ -7,31 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [1.4.0] — 2026-05-22
+## [2.0.0] — 2026-05-23
 
 ### Added
 
-**Shortcode — `[kcas_section id="X"]`**
-- Render any published, active section anywhere in WordPress content: posts, pages, widgets, Classic Editor, Gutenberg custom HTML blocks, or any plugin that executes shortcodes.
-- Accepts a single required attribute: `id` — the post ID of the section to render.
-- All display controls are respected: login-state visibility, date scheduling, user role targeting, and device CSS classes are applied exactly as in automatic archive injection.
-- Block context is set correctly: on singular pages, dynamic blocks (`core/post-title`, `core/post-featured-image`, etc.) resolve against the viewed post; on archive/other pages, post-specific blocks return empty rather than leaking section metadata.
-- Output is never cached — the shortcode already runs inside the page's own cached HTML; caching section output separately would cause stale double-caching.
-- The `kcas_section_html` filter fires on shortcode output (position = `'shortcode'`), so developer customisations apply consistently everywhere.
-
-**Drag-drop reordering**
-- A drag-handle column (☰) appears as the first column in the Archive Sections list table.
-- Handles are revealed only once jQuery UI Sortable is initialised — invisible on screens where sorting is not active (e.g. when a column header sort is applied).
-- Drag-drop is automatically disabled when the list is sorted by a column header (`?orderby=…`); reorder by dragging is only meaningful in the default `menu_order` view.
-- Dropping a row saves the new order instantly via AJAX (`wp_ajax_kcas_reorder_sections`) — no page reload required. Each section's `menu_order` is updated to its 0-based visual position.
-- Default list table sort order changed to `menu_order ASC, title ASC` (was WordPress default). This makes the drag-drop order immediately visible without any URL parameter.
-- AJAX handler validates a dedicated nonce (`kcas_reorder`) and `edit_posts` capability; non-KCAS post IDs in the payload are silently skipped.
-
----
-
-## [1.3.0] — 2026-05-22
-
-### Added
+**New locations**
+- **Front page** — targets the static front page (`is_front_page() && !is_home()`). Distinct from the blog index so each can have independent sections.
+- **All pages** — targets every static WordPress page (`is_page()`).
+- **Specific pages** — targets individual pages selected from a searchable page picker in the meta box. Saved as `_kcas_pages` (array of page IDs).
+- **CPT archives** — targets the archive listing page of a specific custom post type. A post-type dropdown appears in the meta box when this location is chosen. Saved as `_kcas_cpt` (CPT slug string).
+- **CPT singles** — targets individual posts of a specific custom post type. Uses the same post-type dropdown as CPT archives.
 
 **Display scheduling**
 - New **Schedule** fields in the meta box: optional **From** and **To** date pickers (YYYY-MM-DD, HTML5 `<input type="date">`).
@@ -53,31 +38,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The roles row is automatically hidden in the meta box when Visibility is set to "Logged-out visitors only" (role checks are irrelevant for logged-out users).
 - Stored as `_kcas_roles` (array of role slugs). Validated against `wp_roles()->roles` before saving.
 
-**Admin UX (v1.3.0)**
-- Scheduling, Devices, and User roles sections all appear below the Visibility setting, separated by dividers.
-- Hint text under each new field explains the default/no-restriction behaviour.
-- Duplicate action copies all four new meta keys to the cloned post.
+**Shortcode — `[kcas_section id="X"]`**
+- Render any published, active section anywhere in WordPress content: posts, pages, widgets, Classic Editor, Gutenberg custom HTML blocks, or any plugin that executes shortcodes.
+- Accepts a single required attribute: `id` — the post ID of the section to render.
+- All display controls are respected: login-state visibility, date scheduling, user role targeting, and device CSS classes are applied exactly as in automatic archive injection.
+- Block context is set correctly: on singular pages, dynamic blocks (`core/post-title`, `core/post-featured-image`, etc.) resolve against the viewed post; on archive/other pages, post-specific blocks return empty rather than leaking section metadata.
+- Output is never cached — the shortcode already runs inside the page's own cached HTML; caching section output separately would cause stale double-caching.
+- The `kcas_section_html` filter fires on shortcode output (position = `'shortcode'`), so developer customisations apply consistently everywhere.
 
----
-
-## [1.2.0] — 2026-05-22
-
-### Added
-
-**New locations**
-- **Front page** — targets the static front page (`is_front_page() && !is_home()`). Distinct from the blog index so each can have independent sections.
-- **All pages** — targets every static WordPress page (`is_page()`).
-- **Specific pages** — targets individual pages selected from a searchable page picker in the meta box. Saved as `_kcas_pages` (array of page IDs).
-- **CPT archives** — targets the archive listing page of a specific custom post type. A post-type dropdown appears in the meta box when this location is chosen. Saved as `_kcas_cpt` (CPT slug string).
-- **CPT singles** — targets individual posts of a specific custom post type. Uses the same post-type dropdown as CPT archives.
+**Drag-drop reordering**
+- A drag-handle column (☰) appears as the first column in the Archive Sections list table.
+- Handles are revealed only once jQuery UI Sortable is initialised — invisible on screens where sorting is not active (e.g. when a column header sort is applied).
+- Drag-drop is automatically disabled when the list is sorted by a column header (`?orderby=…`); reorder by dragging is only meaningful in the default `menu_order` view.
+- Dropping a row saves the new order instantly via AJAX (`wp_ajax_kcas_reorder_sections`) — no page reload required. Each section's `menu_order` is updated to its 0-based visual position.
+- Default list table sort order changed to `menu_order ASC, title ASC` (was WordPress default). This makes the drag-drop order immediately visible without any URL parameter.
+- AJAX handler validates a dedicated nonce (`kcas_reorder`) and `edit_posts` capability; non-KCAS post IDs in the payload are silently skipped.
 
 **Admin UI**
 - Location grid reorganised into four labelled groups: **General** (Disabled, Blog index, Front page), **Archives** (All categories, Specific categories, Tags, Authors, Search, Date), **Singular** (Single posts, All pages, Specific pages), **Custom Post Types** (CPT archives, CPT singles — only shown when public non-built-in CPTs are registered).
 - **Specific Pages picker** — scrollable, searchable checklist (`kcas_pages[]`); shown/hidden via JS when "Specific pages" is selected; mirrors the existing category picker UI.
 - **Post type dropdown** (`kcas_cpt`) — shown/hidden via JS when "CPT archives" or "CPT singles" is selected; lists all public non-built-in CPTs with their singular label and slug.
-- List table Location column now shows labels and hints for all five new locations (specific page titles, CPT singular name).
+- Scheduling, Devices, and User roles sections appear below Visibility in the meta box, separated by dividers, with hint text explaining default/no-restriction behaviour.
+- Duplicate action copies all new meta keys (`_kcas_pages`, `_kcas_cpt`, `_kcas_date_from`, `_kcas_date_to`, `_kcas_devices`, `_kcas_roles`) to the cloned post.
+- List table Location column shows hints (page titles, CPT name) for all picker-based locations.
 - Preview button resolves a relevant URL for every new location type.
-- Duplicate action copies `_kcas_pages` and `_kcas_cpt` meta to the cloned post.
 
 **Cache / uninstall**
 - Five new location slugs added to `KCAS_Cache::LOCATIONS`, version-option busting, and `uninstall.php` cleanup.
@@ -173,6 +157,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+[2.0.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/wpkayce/kayce-custom-archive-sections/releases/tag/v1.0.0

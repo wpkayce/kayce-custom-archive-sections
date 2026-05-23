@@ -4,7 +4,7 @@ Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 2.0.0
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -161,38 +161,32 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 
 == Changelog ==
 
-= 1.4.0 =
-**New features**
-
-* **Shortcode `[kcas_section id="X"]`** — embed any section anywhere in WordPress content. Respects all display controls: login visibility, date scheduling, user roles, and device CSS classes. Dynamic blocks resolve against the current viewed page.
-* **Drag-drop reordering** — drag rows in the Archive Sections list table to reorder them. Order saves instantly via AJAX. Drag handles are hidden when a column sort is active to avoid confusion.
-* Default list table sort is now `menu_order ASC` (was WordPress default date sort), so the drag-drop order is visible immediately on the list screen.
-
-= 1.3.0 =
-**New features — Display Control**
-
-* **Display scheduling** — set an optional From and/or To date in the meta box. Sections outside their date range are automatically hidden; no theme changes needed. Dates respect the WordPress site timezone.
-* **Device visibility** — three toggle checkboxes (Desktop ≥ 1025 px, Tablet 768–1024 px, Mobile ≤ 767 px). Deselected devices hide the section using CSS `@media` queries — works with all page-caching setups and CDNs.
-* **User role targeting** — restrict a section to one or more WordPress user roles. Leave all unchecked for no restriction. The roles panel is automatically hidden when Visibility is set to "Logged-out visitors only".
-* Duplicate action now copies scheduling, device, and role settings to the cloned post.
-
-= 1.2.0 =
+= 2.0.0 =
 **New locations**
 
 * Added **Front page** location — targets the static front page independently from the blog index.
 * Added **All pages** location — displays on every WordPress page.
-* Added **Specific pages** location — shows a searchable page picker; the section only displays on the selected pages.
-* Added **CPT archives** location — targets the archive listing of a specific custom post type, chosen from a dropdown. Only displayed when public non-built-in CPTs are registered.
+* Added **Specific pages** location — searchable page picker; section only displays on selected pages.
+* Added **CPT archives** location — targets the archive listing of a specific custom post type.
 * Added **CPT singles** location — targets individual posts of a specific custom post type.
 
-**Admin UI improvements**
+**Display controls**
+
+* **Display scheduling** — optional From / To date pickers. Sections outside their date range are hidden automatically. Dates respect the WordPress site timezone.
+* **Device visibility** — Desktop / Tablet / Mobile toggle checkboxes. Implemented in CSS `@media` queries — works with all caching setups and CDNs.
+* **User role targeting** — restrict a section to specific WordPress user roles. Leave all unchecked for no restriction.
+
+**Shortcode**
+
+* `[kcas_section id="X"]` — embed any section anywhere in WordPress content. All display controls (scheduling, roles, devices) are respected.
+
+**Admin UI**
 
 * Location grid reorganised into four labelled groups: General, Archives, Singular, and Custom Post Types.
-* Searchable **page picker** for Specific pages (mirrors the existing category picker).
-* **Post type dropdown** for CPT archives and CPT singles.
-* List table Location column now shows hints (page titles, CPT name) for all picker-based locations.
-* Preview button resolves a relevant URL for every new location type.
-* Duplicate action now copies page and CPT selections to the cloned post.
+* Searchable **page picker** for Specific pages; **post type dropdown** for CPT locations.
+* **Drag-drop reordering** — drag the ☰ handle in the list table to reorder sections instantly via AJAX.
+* Default list table sort is now `menu_order ASC` so drag-drop order is immediately visible.
+* Duplicate action copies all new meta (pages, CPT, scheduling, devices, roles) to the cloned post.
 
 = 1.1.1 =
 **Bug fixes**
@@ -267,14 +261,8 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 
 == Upgrade Notice ==
 
-= 1.4.0 =
-Feature update — adds the `[kcas_section id="X"]` shortcode and drag-drop list table reordering. No data migration required; existing sections and settings are unaffected.
-
-= 1.3.0 =
-Feature update — adds display scheduling (date range), device visibility (desktop/tablet/mobile via CSS), and user role targeting. All new fields are optional with safe defaults; existing sections behave exactly as before.
-
-= 1.2.0 =
-Feature update — adds five new display locations: Front page, All pages, Specific pages (with page picker), CPT archives, and CPT singles. No data migration or manual steps required; existing sections are unaffected.
+= 2.0.0 =
+Major feature update — adds five new locations (Front page, All pages, Specific pages, CPT archives, CPT singles), display scheduling, device visibility, user role targeting, the `[kcas_section id="X"]` shortcode, and drag-drop list table reordering. All new fields are optional with safe defaults; no data migration required; existing sections are unaffected.
 
 = 1.1.1 =
 Bug fix release — resolves section display issues on FSE / block themes (single posts, After Header position, layout style breaking on reload), post content disappearing after sections render, stale output after theme switch, and After Header sections staying inside the sidebar column on ColorMag and similar themes.
