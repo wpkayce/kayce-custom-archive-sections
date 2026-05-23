@@ -3,10 +3,13 @@
  *
  * 1. Location card grid — syncs is-selected class on `.kcas-location-card`.
  * 2. Button groups — syncs is-selected class on `.kcas-btn-option`.
- * 3. Category row — shows / hides when "Specific categories" is selected.
+ * 3. Location radio → show/hide: categories row, pages row, CPT row, position row.
  * 4. Category search — live-filters the category list.
- * 5. Category checkboxes — syncs is-checked class on `.kcas-cat-item`.
+ * 4b. Page search — live-filters the specific-pages list.
+ * 5. Category / page checkboxes — syncs is-checked class on `.kcas-cat-item`.
  * 6. Quick Edit — populates fields from hidden data-* spans.
+ * 7. (v1.3.0) Device checkboxes — syncs is-checked class on `.kcas-device-option`.
+ * 8. (v1.3.0) Visibility radio → show/hide roles row (roles hidden for logged-out).
  */
 ( function () {
 	'use strict';
@@ -66,6 +69,8 @@
 
 		// ── 3. Location radio → show/hide dependent sections ────────────────
 		var categoriesRow = document.getElementById( 'kcas-categories-row' );
+		var pagesRow      = document.getElementById( 'kcas-pages-row' );
+		var cptRow        = document.getElementById( 'kcas-cpt-row' );
 		var positionRow   = document.getElementById( 'kcas-position-row' );
 		// The .kcas-divider immediately before the Position section.
 		var positionDivider = positionRow ? positionRow.previousElementSibling : null;
@@ -74,13 +79,23 @@
 			if ( ! locationGrid ) {
 				return;
 			}
-			var selected   = locationGrid.querySelector( 'input[name="kcas_location"]:checked' );
-			var value      = selected ? selected.value : '';
+			var selected    = locationGrid.querySelector( 'input[name="kcas_location"]:checked' );
+			var value       = selected ? selected.value : '';
 			var hasLocation = value !== '';
 
 			// Categories row — only when Specific Categories is chosen.
 			if ( categoriesRow ) {
 				categoriesRow.style.display = ( value === 'specific_categories' ) ? '' : 'none';
+			}
+
+			// Pages row — only when Specific Pages is chosen.
+			if ( pagesRow ) {
+				pagesRow.style.display = ( value === 'specific_pages' ) ? '' : 'none';
+			}
+
+			// CPT row — when CPT Archives or CPT Singles is chosen.
+			if ( cptRow ) {
+				cptRow.style.display = ( value === 'cpt_archives' || value === 'cpt_singles' ) ? '' : 'none';
 			}
 
 			// Position row (and its preceding divider) — hidden when Disabled.
@@ -102,7 +117,7 @@
 		if ( catSearch ) {
 			catSearch.addEventListener( 'input', function () {
 				var term  = this.value.toLowerCase().trim();
-				var items = document.querySelectorAll( '.kcas-cat-item' );
+				var items = document.querySelectorAll( '#kcas-categories-row .kcas-cat-item' );
 				items.forEach( function ( item ) {
 					var name = item.querySelector( '.kcas-cat-name' );
 					var text = name ? name.textContent.toLowerCase() : item.textContent.toLowerCase();
@@ -111,7 +126,21 @@
 			} );
 		}
 
-		// ── 5. Category item — sync is-checked class ──────────────────────────
+		// ── 4b. Page search filter ────────────────────────────────────────────
+		var pageSearch = document.getElementById( 'kcas-page-search' );
+		if ( pageSearch ) {
+			pageSearch.addEventListener( 'input', function () {
+				var term  = this.value.toLowerCase().trim();
+				var items = document.querySelectorAll( '#kcas-pages-list .kcas-cat-item' );
+				items.forEach( function ( item ) {
+					var name = item.querySelector( '.kcas-cat-name' );
+					var text = name ? name.textContent.toLowerCase() : item.textContent.toLowerCase();
+					item.style.display = ( ! term || text.indexOf( term ) !== -1 ) ? '' : 'none';
+				} );
+			} );
+		}
+
+		// ── 5. Category / page item — sync is-checked class ──────────────────
 		document.querySelectorAll( '.kcas-cat-item input[type="checkbox"]' ).forEach( function ( chk ) {
 			chk.addEventListener( 'change', function () {
 				var item = chk.closest( '.kcas-cat-item' );
@@ -121,7 +150,106 @@
 			} );
 		} );
 
+		// ── 7. (v1.3.0) Device checkboxes — sync is-checked ──────────────────
+		document.querySelectorAll( '.kcas-device-option input[type="checkbox"]' ).forEach( function ( chk ) {
+			chk.addEventListener( 'change', function () {
+				var item = chk.closest( '.kcas-device-option' );
+				if ( item ) {
+					item.classList.toggle( 'is-checked', chk.checked );
+				}
+			} );
+		} );
+
+		// ── 8. (v1.3.0) Visibility radio → show/hide roles row ───────────────
+		var rolesRow      = document.getElementById( 'kcas-roles-row' );
+		var visibilityBtns = document.querySelectorAll( 'input[name="kcas_visibility"]' );
+
+		function syncRolesRow() {
+			if ( ! rolesRow ) {
+				return;
+			}
+			var selected = document.querySelector( 'input[name="kcas_visibility"]:checked' );
+			var val = selected ? selected.value : 'all';
+			// Roles only apply to logged-in users; hide the row for logged-out.
+			rolesRow.style.display = ( val === 'logged_out' ) ? 'none' : '';
+		}
+
+		visibilityBtns.forEach( function ( btn ) {
+			btn.addEventListener( 'change', syncRolesRow );
+		} );
+		syncRolesRow();
+
 	} );
+
+	// ── 9. (v1.4.0) Drag-drop reordering ─────────────────────────────────────
+	// jQuery UI Sortable is always available in WP admin. Only initialise when
+	// PHP has set isDraggable = true (default menu_order sort, no ?orderby=).
+	if (
+		typeof jQuery !== 'undefined' &&
+		typeof kcasAdmin !== 'undefined' &&
+		kcasAdmin.isDraggable
+	) {
+		jQuery( function ( $ ) {
+			var $list = $( '#the-list' );
+			if ( ! $list.length ) {
+				return;
+			}
+
+			// Make the table body sortable, using the drag handle as the trigger.
+			$list.sortable( {
+				items:               '> tr',
+				handle:              '.kcas-sort-handle',
+				axis:                'y',
+				cursor:              'grabbing',
+				opacity:             0.75,
+				placeholder:         'kcas-sort-placeholder',
+				forcePlaceholderSize: true,
+
+				start: function ( event, ui ) {
+					// Lock the row width so columns don't collapse while dragging.
+					ui.item.css( 'width', ui.item.width() );
+					ui.item.addClass( 'kcas-dragging' );
+				},
+
+				stop: function ( event, ui ) {
+					ui.item.css( 'width', '' );
+					ui.item.removeClass( 'kcas-dragging' );
+
+					// Collect post IDs in their new visual order.
+					var order = [];
+					$list.find( '> tr[id]' ).each( function () {
+						var id = this.id.replace( 'post-', '' );
+						if ( id && /^\d+$/.test( id ) ) {
+							order.push( id );
+						}
+					} );
+
+					if ( ! order.length ) {
+						return;
+					}
+
+					// Persist the new order via AJAX.
+					$.post(
+						kcasAdmin.ajaxUrl,
+						{
+							action: 'kcas_reorder_sections',
+							nonce:  kcasAdmin.reorderNonce,
+							order:  order,
+						},
+						function ( response ) {
+							if ( response && ! response.success ) {
+								// eslint-disable-next-line no-console
+								console.error( '[KCAS]', kcasAdmin.reorderError );
+							}
+						}
+					);
+				},
+			} );
+
+			// Reveal handles now that sortable is live.
+			$list.addClass( 'kcas-sortable-active' );
+		} );
+	}
 
 	// ── 6. Quick Edit — populate fields from hidden data-* spans ─────────────
 	// Hooks into WordPress's built-in inlineEditPost.edit function.

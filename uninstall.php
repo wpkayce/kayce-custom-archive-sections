@@ -39,6 +39,12 @@ $kcas_locations = array(
 	'author_archives',
 	'search_results',
 	'date_archives',
+	// v1.2.0
+	'front_page',
+	'all_pages',
+	'specific_pages',
+	'cpt_archives',
+	'cpt_singles',
 );
 
 foreach ($kcas_locations as $kcas_location) {

@@ -45,3 +45,33 @@
 .kcas-archive-section + .kcas-archive-section {
 	margin-top: 1.5em;
 }
+
+/* ── v1.3.0 Device visibility ───────────────────────────────────────────── */
+/*
+ * These classes are added server-side when the "Devices" setting excludes one
+ * or more device types. Using `display:none !important` ensures the section is
+ * hidden regardless of theme specificity.
+ *
+ * Breakpoints:
+ *   Desktop  ≥ 1025 px
+ *   Tablet     768 – 1024 px
+ *   Mobile   ≤  767 px
+ */
+
+@media (min-width: 1025px) {
+	.kcas-hide-desktop {
+		display: none !important;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+	.kcas-hide-tablet {
+		display: none !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.kcas-hide-mobile {
+		display: none !important;
+	}
+}
