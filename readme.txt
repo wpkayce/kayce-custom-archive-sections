@@ -1,5 +1,5 @@
 === Kayce Custom Archive Sections ===
-Contributors: rohitkc32, wpkayce
+Contributors: wpkayce
 Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
