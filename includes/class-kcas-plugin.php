@@ -44,6 +44,7 @@ class KCAS_Plugin {
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-admin.php';
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-frontend.php';
 		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-settings.php';
+		require_once KCAS_PLUGIN_DIR . 'includes/class-kcas-block.php';
 
 		new KCAS_CPT( self::POST_TYPE );
 		new KCAS_Settings( self::POST_TYPE );
@@ -63,7 +64,7 @@ class KCAS_Plugin {
 			self::META_CATEGORIES
 		);
 
-		new KCAS_Frontend(
+		$frontend = new KCAS_Frontend(
 			self::POST_TYPE,
 			self::META_LOCATION,
 			self::META_POSITION,
@@ -71,6 +72,10 @@ class KCAS_Plugin {
 			self::META_VISIBILITY,
 			self::META_CATEGORIES
 		);
+
+		// The block renders through the frontend instance so that embedding a
+		// section with the block and with [kcas_section] cannot diverge.
+		new KCAS_Block( $frontend, self::POST_TYPE );
 	}
 
 }

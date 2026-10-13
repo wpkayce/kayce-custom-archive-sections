@@ -90,6 +90,7 @@ class KCAS_Frontend
 			! is_front_page() &&
 			! is_category() &&
 			! is_tag() &&
+			! is_tax() &&
 			! is_author() &&
 			! is_search() &&
 			! is_date() &&
@@ -434,6 +435,21 @@ class KCAS_Frontend
 			return array(array('location' => 'tag_archives', 'extra' => ''));
 		}
 
+		// ── Custom taxonomy archives (v2.1.0) ─────────────────────────────────
+		// is_tax() is deliberately false on category and tag archives, which are
+		// handled above, so this branch only ever matches custom taxonomies —
+		// WooCommerce product categories, or any taxonomy registered by a theme
+		// or plugin. The taxonomy slug goes in the cache key so two taxonomies
+		// never share cached output.
+		if (is_tax()) {
+			$term     = get_queried_object();
+			$taxonomy = ($term instanceof WP_Term) ? sanitize_key($term->taxonomy) : '';
+
+			return array(
+				array('location' => 'taxonomy_archives', 'extra' => $taxonomy),
+			);
+		}
+
 		// ── Author archives ───────────────────────────────────────────────────
 		if (is_author()) {
 			return array(array('location' => 'author_archives', 'extra' => ''));
@@ -546,6 +562,8 @@ class KCAS_Frontend
 			'specific_pages',
 			'cpt_archives',
 			'cpt_singles',
+			// v2.1.0
+			'taxonomy_archives',
 		);
 		$allowed_positions = array('before_content', 'before', 'after');
 
@@ -823,6 +841,20 @@ class KCAS_Frontend
 			}
 			$current_cpt = sanitize_key($current_cpt);
 			if (! $saved_cpt || $saved_cpt !== $current_cpt) {
+				return false;
+			}
+		}
+
+		// Taxonomy archives (v2.1.0) — saved taxonomy must match the current one.
+		// Without this a section set to one taxonomy would show on every custom
+		// taxonomy archive on the site.
+		if ('taxonomy_archives' === $location && is_tax()) {
+			$saved_tax = sanitize_key((string) get_post_meta($post_id, '_kcas_taxonomy', true));
+			$term      = get_queried_object();
+			if (! $term instanceof WP_Term) {
+				return false;
+			}
+			if (! $saved_tax || $saved_tax !== $term->taxonomy) {
 				return false;
 			}
 		}

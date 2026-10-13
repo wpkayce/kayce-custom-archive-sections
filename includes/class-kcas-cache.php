@@ -43,6 +43,8 @@ class KCAS_Cache
 		'specific_pages',
 		'cpt_archives',
 		'cpt_singles',
+		// v2.1.0
+		'taxonomy_archives',
 	);
 
 	/** @var string */

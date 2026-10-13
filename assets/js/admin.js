@@ -71,6 +71,7 @@
 		var categoriesRow = document.getElementById( 'kcas-categories-row' );
 		var pagesRow      = document.getElementById( 'kcas-pages-row' );
 		var cptRow        = document.getElementById( 'kcas-cpt-row' );
+		var taxonomyRow   = document.getElementById( 'kcas-taxonomy-row' );
 		var positionRow   = document.getElementById( 'kcas-position-row' );
 		// The .kcas-divider immediately before the Position section.
 		var positionDivider = positionRow ? positionRow.previousElementSibling : null;
@@ -96,6 +97,11 @@
 			// CPT row — when CPT Archives or CPT Singles is chosen.
 			if ( cptRow ) {
 				cptRow.style.display = ( value === 'cpt_archives' || value === 'cpt_singles' ) ? '' : 'none';
+			}
+
+			// Taxonomy row — only when Taxonomy Archives is chosen.
+			if ( taxonomyRow ) {
+				taxonomyRow.style.display = ( value === 'taxonomy_archives' ) ? '' : 'none';
 			}
 
 			// Position row (and its preceding divider) — hidden when Disabled.

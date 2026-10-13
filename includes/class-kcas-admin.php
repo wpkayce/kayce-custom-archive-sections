@@ -55,6 +55,8 @@ class KCAS_Admin
 		'specific_pages',
 		'cpt_archives',
 		'cpt_singles',
+		// v2.1.0
+		'taxonomy_archives',
 	);
 
 	/** @var string[] */
@@ -229,6 +231,21 @@ class KCAS_Admin
 		);
 		unset($public_cpts[$this->post_type]);
 
+		// v2.1.0 — Public custom taxonomies. Category and tag are excluded by
+		// _builtin => false because they already have their own locations, and
+		// a taxonomy with no archive to visit is not a place a section can show.
+		$saved_taxonomy    = (string) get_post_meta($post->ID, '_kcas_taxonomy', true);
+		$public_taxonomies = get_taxonomies(
+			array('public' => true, '_builtin' => false),
+			'objects'
+		);
+		$public_taxonomies = array_filter(
+			$public_taxonomies,
+			static function ($tax) {
+				return ! empty($tax->publicly_queryable);
+			}
+		);
+
 		// v1.3.0 — Display Control fields.
 		$date_from    = get_post_meta($post->ID, '_kcas_date_from', true);
 		$date_to      = get_post_meta($post->ID, '_kcas_date_to',   true);
@@ -315,6 +332,19 @@ class KCAS_Admin
 					</span>
 				</label>
 				<?php endforeach; ?>
+
+				<?php /* Group: Taxonomies (v2.1.0 — only when custom taxonomies exist) */ ?>
+				<?php if (! empty($public_taxonomies)) : ?>
+				<div class="kcas-location-group-label"><?php esc_html_e('Taxonomies', 'kayce-custom-archive-sections'); ?></div>
+
+				<label class="kcas-location-card <?php echo esc_attr(('taxonomy_archives' === $location) ? 'is-selected' : ''); ?>">
+					<input type="radio" name="kcas_location" value="taxonomy_archives" <?php checked($location, 'taxonomy_archives'); ?> />
+					<span class="kcas-card-body">
+						<span class="dashicons dashicons-networking"></span>
+						<span class="kcas-card-label"><?php esc_html_e('Taxonomy archives', 'kayce-custom-archive-sections'); ?></span>
+					</span>
+				</label>
+				<?php endif; ?>
 
 				<?php /* Group: Singular */ ?>
 				<div class="kcas-location-group-label"><?php esc_html_e('Singular', 'kayce-custom-archive-sections'); ?></div>
@@ -444,6 +474,29 @@ class KCAS_Admin
 				</option>
 				<?php endforeach; ?>
 			</select>
+		</div>
+		<?php endif; ?>
+
+		<?php /* ── Taxonomy Picker (v2.1.0, shown / hidden via JS) ── */ ?>
+		<?php if (! empty($public_taxonomies)) : ?>
+		<div class="kcas-section" id="kcas-taxonomy-row"
+			style="<?php echo esc_attr(('taxonomy_archives' !== $location) ? 'display:none;' : ''); ?>">
+			<p class="kcas-section-label">
+				<span class="dashicons dashicons-networking"></span>
+				<?php esc_html_e('Taxonomy', 'kayce-custom-archive-sections'); ?>
+			</p>
+			<select name="kcas_taxonomy" id="kcas-taxonomy-select" class="widefat">
+				<option value=""><?php esc_html_e('— Select a taxonomy —', 'kayce-custom-archive-sections'); ?></option>
+				<?php foreach ($public_taxonomies as $tax_obj) : ?>
+				<option value="<?php echo esc_attr($tax_obj->name); ?>"
+					<?php selected($saved_taxonomy, $tax_obj->name); ?>>
+					<?php echo esc_html($tax_obj->labels->singular_name . ' (' . $tax_obj->name . ')'); ?>
+				</option>
+				<?php endforeach; ?>
+			</select>
+			<p class="kcas-field-hint">
+				<?php esc_html_e('The section shows on every term archive of this taxonomy.', 'kayce-custom-archive-sections'); ?>
+			</p>
 		</div>
 		<?php endif; ?>
 
@@ -684,6 +737,30 @@ class KCAS_Admin
 				}
 				return null;
 
+			// v2.1.0 — a taxonomy has no single archive URL of its own, so
+			// preview the first term that actually has posts. A term with no
+			// posts would render an empty archive and look like a broken link.
+			case 'taxonomy_archives':
+				if (isset($post->ID)) {
+					$tax_slug = sanitize_key((string) get_post_meta($post->ID, '_kcas_taxonomy', true));
+					if ('' !== $tax_slug && taxonomy_exists($tax_slug)) {
+						$terms = get_terms(
+							array(
+								'taxonomy'   => $tax_slug,
+								'hide_empty' => true,
+								'number'     => 1,
+							)
+						);
+						if (! is_wp_error($terms) && ! empty($terms)) {
+							$url = get_term_link($terms[0]);
+							if (! is_wp_error($url)) {
+								return $url;
+							}
+						}
+					}
+				}
+				return null;
+
 			case 'cpt_singles':
 				if (isset($post->ID)) {
 					$cpt_slug = get_post_meta($post->ID, '_kcas_cpt', true);
@@ -799,6 +876,20 @@ class KCAS_Admin
 			}
 		}
 		// If location is not CPT-related, leave _kcas_cpt untouched.
+
+		// ── Taxonomy slug (v2.1.0) ────────────────────────────────────────────
+		// Same preserve-on-switch pattern as the pickers above.
+		if ('taxonomy_archives' === $location) {
+			$taxonomy_slug = isset($_POST['kcas_taxonomy'])
+				? sanitize_key(wp_unslash($_POST['kcas_taxonomy']))
+				: '';
+			if ('' !== $taxonomy_slug && taxonomy_exists($taxonomy_slug)) {
+				update_post_meta($post_id, '_kcas_taxonomy', $taxonomy_slug);
+			} else {
+				delete_post_meta($post_id, '_kcas_taxonomy');
+			}
+		}
+		// If location is not taxonomy_archives, leave _kcas_taxonomy untouched.
 
 		// ── Position ──────────────────────────────────────────────────────────
 		$position = isset($_POST['kcas_position'])
@@ -959,6 +1050,7 @@ class KCAS_Admin
 					'date_archives'       => esc_html__('Date archives', 'kayce-custom-archive-sections'),
 					'cpt_archives'        => esc_html__('CPT archives', 'kayce-custom-archive-sections'),
 					'cpt_singles'         => esc_html__('CPT singles', 'kayce-custom-archive-sections'),
+					'taxonomy_archives'   => esc_html__('Taxonomy archives', 'kayce-custom-archive-sections'),
 				);
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				echo isset($labels[$location]) ? $labels[$location] : esc_html($location);

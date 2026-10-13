@@ -7,6 +7,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.1.0] — 2026-10-13
+
+### Added
+
+- **Custom taxonomy archives** location. Targets every term archive of any public custom taxonomy, including WooCommerce product categories and tags. Until now only the built-in Category and Tag archives could be targeted — `is_tax()` was not handled anywhere, so custom taxonomy archives fell through the archive guard entirely.
+- **Archive Section block** (`kayce/archive-section`). Embeds a section from the block inserter, including inside Full Site Editing templates where a shortcode cannot be used. Server-rendered from a stored section ID, so an embedded section always reflects its current content.
+
+### Changed
+
+- `KCAS_Frontend::resolve_locations()` now returns a `taxonomy_archives` location on `is_tax()` pages, with the taxonomy slug as the cache-key suffix so two taxonomies never share cached output.
+- The block renders through `KCAS_Frontend::render_shortcode()` rather than duplicating it, so block and shortcode embeds cannot diverge in how they apply the active flag, login-state visibility, scheduling, device targeting and role checks.
+
 ## [2.0.0] — 2026-05-23
 
 ### Added
@@ -157,6 +169,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+[2.1.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.0.0...v1.1.0

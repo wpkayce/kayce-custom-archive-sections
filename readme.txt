@@ -4,7 +4,7 @@ Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,7 @@ It works with both **classic PHP themes** and modern **Full Site Editing (FSE) /
 * Date archives
 * CPT archives — target the archive page of any custom post type
 * CPT singles — target individual posts of any custom post type
+* Custom taxonomy archives — target every term archive of any public custom taxonomy, including WooCommerce product categories and tags
 
 **Singular locations supported:**
 
@@ -56,9 +57,12 @@ It works with both **classic PHP themes** and modern **Full Site Editing (FSE) /
 * **Preview link** in the meta box that jumps straight to the relevant archive page
 * Display order controlled via drag-drop or the standard **Order** field (Page Attributes)
 
-**Shortcode:**
+**Embedding a section manually:**
 
-* `[kcas_section id="X"]` — embed any section anywhere in your content; all display controls (scheduling, roles, devices) are respected
+* **Archive Section block** — pick a section from a dropdown and drop it anywhere, including Full Site Editing templates; the content is rendered on page load, so it always reflects the section as it is now
+* `[kcas_section id="X"]` — the same thing as a shortcode, for classic editor and page builder content
+
+Both respect every display control (scheduling, roles, devices, login state).
 
 **Performance & security:**
 
@@ -163,6 +167,17 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 
 == Changelog ==
 
+= 2.1.0 =
+**New**
+
+* **Custom taxonomy archives** — a new location that targets every term archive of any public custom taxonomy. This covers WooCommerce product categories and tags, and any taxonomy registered by a theme or plugin. Previously only the built-in Category and Tag archives could be targeted.
+* **Archive Section block** — embed a section from the block inserter instead of typing a shortcode. Works in Full Site Editing templates, where a shortcode cannot go. Sections are rendered on page load, so an embedded section always shows its current content.
+
+**Notes**
+
+* The block renders through the same code path as `[kcas_section]`, so both honour the active toggle, login-state visibility, scheduling, device targeting and user roles identically.
+* Tested against WordPress 7.1.
+
 = 2.0.0 =
 **New locations**
 
@@ -262,6 +277,9 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 * `uninstall.php` for clean removal.
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+Adds a Custom taxonomy archives location, so sections can now target WooCommerce product categories and any other custom taxonomy, plus an Archive Section block for embedding a section without a shortcode. Both additions are optional; existing sections are unaffected and no migration is required.
 
 = 2.0.0 =
 Major feature update — adds five new locations (Front page, All pages, Specific pages, CPT archives, CPT singles), display scheduling, device visibility, user role targeting, the `[kcas_section id="X"]` shortcode, and drag-drop list table reordering. All new fields are optional with safe defaults; no data migration required; existing sections are unaffected.
