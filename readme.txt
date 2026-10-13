@@ -4,7 +4,7 @@ Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,7 @@ It works with both **classic PHP themes** and modern **Full Site Editing (FSE) /
 * CPT archives — target the archive page of any custom post type
 * CPT singles — target individual posts of any custom post type
 * Custom taxonomy archives — target every term archive of any public custom taxonomy, including WooCommerce product categories and tags
+* Specific terms — target individual terms within any custom taxonomy, with a searchable term picker
 
 **Singular locations supported:**
 
@@ -167,6 +168,16 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 
 == Changelog ==
 
+= 2.2.0 =
+**New**
+
+* **Specific terms** — a new location that targets individual terms inside any public custom taxonomy, the way Specific categories already works for categories. Choose a taxonomy, then tick the terms the section should appear on. The picker has a search filter, so it stays usable on sites with long term lists.
+
+**Notes**
+
+* Terms are checked against the section's saved taxonomy when saving and again when displaying, so switching taxonomy cannot leave a section matching terms that belong to the old one.
+* Very long term lists are capped in the picker; when that happens the UI says so and suggests Taxonomy archives instead of silently omitting terms. Developers can raise the limit with the `kcas_terms_picker_limit` filter.
+
 = 2.1.0 =
 **New**
 
@@ -277,6 +288,9 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 * `uninstall.php` for clean removal.
 
 == Upgrade Notice ==
+
+= 2.2.0 =
+Adds a Specific terms location, so a section can target individual terms inside a custom taxonomy rather than the whole taxonomy. Optional; existing sections are unaffected and no migration is required.
 
 = 2.1.0 =
 Adds a Custom taxonomy archives location, so sections can now target WooCommerce product categories and any other custom taxonomy, plus an Archive Section block for embedding a section without a shortcode. Both additions are optional; existing sections are unaffected and no migration is required.

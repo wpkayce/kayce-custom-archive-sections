@@ -72,6 +72,7 @@
 		var pagesRow      = document.getElementById( 'kcas-pages-row' );
 		var cptRow        = document.getElementById( 'kcas-cpt-row' );
 		var taxonomyRow   = document.getElementById( 'kcas-taxonomy-row' );
+		var termsRow      = document.getElementById( 'kcas-terms-row' );
 		var positionRow   = document.getElementById( 'kcas-position-row' );
 		// The .kcas-divider immediately before the Position section.
 		var positionDivider = positionRow ? positionRow.previousElementSibling : null;
@@ -99,9 +100,15 @@
 				cptRow.style.display = ( value === 'cpt_archives' || value === 'cpt_singles' ) ? '' : 'none';
 			}
 
-			// Taxonomy row — only when Taxonomy Archives is chosen.
+			// Taxonomy row — both taxonomy locations need to pick a taxonomy.
 			if ( taxonomyRow ) {
-				taxonomyRow.style.display = ( value === 'taxonomy_archives' ) ? '' : 'none';
+				taxonomyRow.style.display =
+					( value === 'taxonomy_archives' || value === 'specific_terms' ) ? '' : 'none';
+			}
+
+			// Terms row — only when Specific Terms is chosen.
+			if ( termsRow ) {
+				termsRow.style.display = ( value === 'specific_terms' ) ? '' : 'none';
 			}
 
 			// Position row (and its preceding divider) — hidden when Disabled.
@@ -124,6 +131,46 @@
 			catSearch.addEventListener( 'input', function () {
 				var term  = this.value.toLowerCase().trim();
 				var items = document.querySelectorAll( '#kcas-categories-row .kcas-cat-item' );
+				items.forEach( function ( item ) {
+					var name = item.querySelector( '.kcas-cat-name' );
+					var text = name ? name.textContent.toLowerCase() : item.textContent.toLowerCase();
+					item.style.display = ( ! term || text.indexOf( term ) !== -1 ) ? '' : 'none';
+				} );
+			} );
+		}
+
+		// ── 4a2. (v2.2.0) Taxonomy select → show that taxonomy's term list ────
+		// All term lists are rendered up front and hidden, so switching
+		// taxonomy costs no request. Checkboxes in hidden lists are still
+		// submitted, which is why save_meta re-checks every term against the
+		// saved taxonomy before storing it.
+		var taxonomySelect = document.getElementById( 'kcas-taxonomy-select' );
+		var pickTaxonomyHint = document.getElementById( 'kcas-terms-pick-taxonomy' );
+
+		function syncTermLists() {
+			var chosen = taxonomySelect ? taxonomySelect.value : '';
+			var lists  = document.querySelectorAll( '.kcas-term-list' );
+
+			lists.forEach( function ( list ) {
+				list.style.display = ( list.getAttribute( 'data-taxonomy' ) === chosen ) ? '' : 'none';
+			} );
+
+			if ( pickTaxonomyHint ) {
+				pickTaxonomyHint.style.display = chosen ? 'none' : '';
+			}
+		}
+
+		if ( taxonomySelect ) {
+			taxonomySelect.addEventListener( 'change', syncTermLists );
+			syncTermLists();
+		}
+
+		// ── 4a3. (v2.2.0) Term search filter ──────────────────────────────────
+		var termSearch = document.getElementById( 'kcas-term-search' );
+		if ( termSearch ) {
+			termSearch.addEventListener( 'input', function () {
+				var term  = this.value.toLowerCase().trim();
+				var items = document.querySelectorAll( '#kcas-terms-row .kcas-cat-item' );
 				items.forEach( function ( item ) {
 					var name = item.querySelector( '.kcas-cat-name' );
 					var text = name ? name.textContent.toLowerCase() : item.textContent.toLowerCase();

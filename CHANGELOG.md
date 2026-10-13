@@ -7,6 +7,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.2.0] — 2026-10-13
+
+### Added
+
+- **Specific terms** location. Targets individual terms within any public custom taxonomy, completing the pair started in 2.1.0 — `taxonomy_archives` covers a whole taxonomy, `specific_terms` covers chosen terms inside it. Mirrors how `specific_categories` relates to `category_archives`.
+- Searchable term picker in the meta box. All term lists render up front and are switched client-side, so changing taxonomy costs no request.
+- `kcas_terms_picker_limit` filter for sites whose taxonomies exceed the default 500-term cap.
+
+### Changed
+
+- `resolve_locations()` now returns both `taxonomy_archives` and `specific_terms` on `is_tax()` pages, with the term ID as the cache suffix for the latter.
+- Submitted term IDs are validated against the section's saved taxonomy on save, and the taxonomy is re-checked on display, so switching taxonomy cannot leave a section matching terms from the previous one.
+
 ## [2.1.0] — 2026-10-13
 
 ### Added
@@ -169,6 +182,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+[2.2.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/wpkayce/kayce-custom-archive-sections/compare/v1.1.0...v1.1.1

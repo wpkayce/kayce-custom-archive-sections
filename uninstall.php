@@ -47,6 +47,8 @@ $kcas_locations = array(
 	'cpt_singles',
 	// v2.1.0
 	'taxonomy_archives',
+	// v2.2.0
+	'specific_terms',
 );
 
 foreach ($kcas_locations as $kcas_location) {

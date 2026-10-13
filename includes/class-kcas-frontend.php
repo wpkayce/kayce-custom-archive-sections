@@ -444,9 +444,16 @@ class KCAS_Frontend
 		if (is_tax()) {
 			$term     = get_queried_object();
 			$taxonomy = ($term instanceof WP_Term) ? sanitize_key($term->taxonomy) : '';
+			$term_id  = ($term instanceof WP_Term) ? (int) $term->term_id : 0;
 
+			// Mirrors the category pair above: the whole-taxonomy location and
+			// the specific-term location are both resolved, and each section's
+			// own settings decide which of them it answers to. The term ID is
+			// the cache suffix for specific_terms because term IDs are unique
+			// across taxonomies.
 			return array(
 				array('location' => 'taxonomy_archives', 'extra' => $taxonomy),
+				array('location' => 'specific_terms',    'extra' => (string) $term_id),
 			);
 		}
 
@@ -564,6 +571,8 @@ class KCAS_Frontend
 			'cpt_singles',
 			// v2.1.0
 			'taxonomy_archives',
+			// v2.2.0
+			'specific_terms',
 		);
 		$allowed_positions = array('before_content', 'before', 'after');
 
@@ -855,6 +864,30 @@ class KCAS_Frontend
 				return false;
 			}
 			if (! $saved_tax || $saved_tax !== $term->taxonomy) {
+				return false;
+			}
+		}
+
+		// Specific terms (v2.2.0) — the current term must be one of the saved
+		// ones. The taxonomy is checked too: term IDs are unique, but a section
+		// whose taxonomy was switched after terms were picked would otherwise
+		// keep matching terms belonging to the old taxonomy.
+		if ('specific_terms' === $location && is_tax()) {
+			$term = get_queried_object();
+			if (! $term instanceof WP_Term) {
+				return false;
+			}
+
+			$saved_tax = sanitize_key((string) get_post_meta($post_id, '_kcas_taxonomy', true));
+			if ($saved_tax && $saved_tax !== $term->taxonomy) {
+				return false;
+			}
+
+			$saved_terms = get_post_meta($post_id, '_kcas_terms', true);
+			if (
+				! is_array($saved_terms) ||
+				! in_array((int) $term->term_id, array_map('intval', $saved_terms), true)
+			) {
 				return false;
 			}
 		}

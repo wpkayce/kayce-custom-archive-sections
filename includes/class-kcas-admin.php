@@ -57,6 +57,8 @@ class KCAS_Admin
 		'cpt_singles',
 		// v2.1.0
 		'taxonomy_archives',
+		// v2.2.0
+		'specific_terms',
 	);
 
 	/** @var string[] */
@@ -246,6 +248,35 @@ class KCAS_Admin
 			}
 		);
 
+		// v2.2.0 — terms for the Specific terms picker, grouped by taxonomy so
+		// the browser can switch lists without a round trip. Capped per
+		// taxonomy: a store with thousands of product categories would
+		// otherwise render an unusable meta box. When the cap is hit the UI
+		// says so rather than silently omitting terms.
+		$terms_cap   = (int) apply_filters('kcas_terms_picker_limit', 500);
+		$saved_terms = get_post_meta($post->ID, '_kcas_terms', true);
+		if (! is_array($saved_terms)) {
+			$saved_terms = array();
+		}
+
+		$terms_by_taxonomy = array();
+		$terms_truncated   = array();
+
+		foreach ($public_taxonomies as $tax_obj) {
+			$tax_terms = get_terms(
+				array(
+					'taxonomy'   => $tax_obj->name,
+					'hide_empty' => false,
+					'orderby'    => 'name',
+					'order'      => 'ASC',
+					'number'     => $terms_cap,
+				)
+			);
+
+			$terms_by_taxonomy[$tax_obj->name] = is_wp_error($tax_terms) ? array() : $tax_terms;
+			$terms_truncated[$tax_obj->name]   = count($terms_by_taxonomy[$tax_obj->name]) >= $terms_cap;
+		}
+
 		// v1.3.0 — Display Control fields.
 		$date_from    = get_post_meta($post->ID, '_kcas_date_from', true);
 		$date_to      = get_post_meta($post->ID, '_kcas_date_to',   true);
@@ -342,6 +373,13 @@ class KCAS_Admin
 					<span class="kcas-card-body">
 						<span class="dashicons dashicons-networking"></span>
 						<span class="kcas-card-label"><?php esc_html_e('Taxonomy archives', 'kayce-custom-archive-sections'); ?></span>
+					</span>
+				</label>
+				<label class="kcas-location-card <?php echo esc_attr(('specific_terms' === $location) ? 'is-selected' : ''); ?>">
+					<input type="radio" name="kcas_location" value="specific_terms" <?php checked($location, 'specific_terms'); ?> />
+					<span class="kcas-card-body">
+						<span class="dashicons dashicons-tag"></span>
+						<span class="kcas-card-label"><?php esc_html_e('Specific terms', 'kayce-custom-archive-sections'); ?></span>
 					</span>
 				</label>
 				<?php endif; ?>
@@ -480,7 +518,7 @@ class KCAS_Admin
 		<?php /* ── Taxonomy Picker (v2.1.0, shown / hidden via JS) ── */ ?>
 		<?php if (! empty($public_taxonomies)) : ?>
 		<div class="kcas-section" id="kcas-taxonomy-row"
-			style="<?php echo esc_attr(('taxonomy_archives' !== $location) ? 'display:none;' : ''); ?>">
+			style="<?php echo esc_attr((! in_array($location, array('taxonomy_archives', 'specific_terms'), true)) ? 'display:none;' : ''); ?>">
 			<p class="kcas-section-label">
 				<span class="dashicons dashicons-networking"></span>
 				<?php esc_html_e('Taxonomy', 'kayce-custom-archive-sections'); ?>
@@ -495,7 +533,67 @@ class KCAS_Admin
 				<?php endforeach; ?>
 			</select>
 			<p class="kcas-field-hint">
-				<?php esc_html_e('The section shows on every term archive of this taxonomy.', 'kayce-custom-archive-sections'); ?>
+				<?php esc_html_e('Choose which taxonomy this section targets.', 'kayce-custom-archive-sections'); ?>
+			</p>
+		</div>
+		<?php endif; ?>
+
+		<?php /* ── Specific Terms (v2.2.0, shown / hidden via JS) ── */ ?>
+		<?php if (! empty($public_taxonomies)) : ?>
+		<div class="kcas-section" id="kcas-terms-row"
+			style="<?php echo esc_attr(('specific_terms' !== $location) ? 'display:none;' : ''); ?>">
+			<p class="kcas-section-label">
+				<span class="dashicons dashicons-tag"></span>
+				<?php esc_html_e('Terms', 'kayce-custom-archive-sections'); ?>
+			</p>
+
+			<div class="kcas-cat-search-wrap">
+				<span class="dashicons dashicons-search kcas-cat-search-icon"></span>
+				<input
+					type="text"
+					id="kcas-term-search"
+					class="kcas-cat-search"
+					placeholder="<?php esc_attr_e('Filter terms…', 'kayce-custom-archive-sections'); ?>"
+					autocomplete="off"
+				/>
+			</div>
+
+			<?php foreach ($terms_by_taxonomy as $tax_name => $tax_terms) : ?>
+			<div class="kcas-term-list" data-taxonomy="<?php echo esc_attr($tax_name); ?>"
+				style="<?php echo esc_attr(($saved_taxonomy === $tax_name) ? '' : 'display:none;'); ?>">
+				<?php if (! empty($tax_terms)) : ?>
+					<div class="kcas-category-list">
+						<?php foreach ($tax_terms as $term) :
+							$is_checked = in_array((int) $term->term_id, array_map('intval', $saved_terms), true);
+						?>
+						<label class="kcas-cat-item <?php echo esc_attr($is_checked ? 'is-checked' : ''); ?>">
+							<input type="checkbox" name="kcas_terms[]" value="<?php echo esc_attr($term->term_id); ?>"
+								<?php checked($is_checked); ?> />
+							<span class="kcas-cat-name"><?php echo esc_html($term->name); ?></span>
+							<span class="kcas-cat-count"><?php echo (int) $term->count; ?></span>
+						</label>
+						<?php endforeach; ?>
+					</div>
+					<?php if (! empty($terms_truncated[$tax_name])) : ?>
+					<p class="kcas-field-hint">
+						<?php
+						printf(
+							/* translators: %d: number of terms listed. */
+							esc_html__('Only the first %d terms are listed. Use Taxonomy archives to target all of them.', 'kayce-custom-archive-sections'),
+							(int) $terms_cap
+						);
+						?>
+					</p>
+					<?php endif; ?>
+				<?php else : ?>
+					<p class="kcas-empty-note"><?php esc_html_e('No terms found in this taxonomy.', 'kayce-custom-archive-sections'); ?></p>
+				<?php endif; ?>
+			</div>
+			<?php endforeach; ?>
+
+			<p class="kcas-field-hint" id="kcas-terms-pick-taxonomy"
+				style="<?php echo esc_attr('' === $saved_taxonomy ? '' : 'display:none;'); ?>">
+				<?php esc_html_e('Select a taxonomy above to choose its terms.', 'kayce-custom-archive-sections'); ?>
 			</p>
 		</div>
 		<?php endif; ?>
@@ -761,6 +859,19 @@ class KCAS_Admin
 				}
 				return null;
 
+			// v2.2.0 — preview the first term the section actually targets.
+			case 'specific_terms':
+				if (isset($post->ID)) {
+					$picked = get_post_meta($post->ID, '_kcas_terms', true);
+					if (is_array($picked) && ! empty($picked)) {
+						$url = get_term_link((int) reset($picked));
+						if (! is_wp_error($url)) {
+							return $url;
+						}
+					}
+				}
+				return null;
+
 			case 'cpt_singles':
 				if (isset($post->ID)) {
 					$cpt_slug = get_post_meta($post->ID, '_kcas_cpt', true);
@@ -879,7 +990,7 @@ class KCAS_Admin
 
 		// ── Taxonomy slug (v2.1.0) ────────────────────────────────────────────
 		// Same preserve-on-switch pattern as the pickers above.
-		if ('taxonomy_archives' === $location) {
+		if (in_array($location, array('taxonomy_archives', 'specific_terms'), true)) {
 			$taxonomy_slug = isset($_POST['kcas_taxonomy'])
 				? sanitize_key(wp_unslash($_POST['kcas_taxonomy']))
 				: '';
@@ -889,7 +1000,34 @@ class KCAS_Admin
 				delete_post_meta($post_id, '_kcas_taxonomy');
 			}
 		}
-		// If location is not taxonomy_archives, leave _kcas_taxonomy untouched.
+		// If location is not taxonomy-related, leave _kcas_taxonomy untouched.
+
+		// ── Specific terms (v2.2.0) ───────────────────────────────────────────
+		// Same preserve-on-switch pattern as the other pickers. Each submitted
+		// ID is checked against the saved taxonomy, so a stale checkbox from a
+		// taxonomy the user switched away from cannot be stored.
+		if ('specific_terms' === $location) {
+			$term_ids = array();
+
+			if (! empty($_POST['kcas_terms'])) {
+				$taxonomy_slug = (string) get_post_meta($post_id, '_kcas_taxonomy', true);
+				$raw_terms     = array_filter(array_map('absint', (array) $_POST['kcas_terms']));
+
+				foreach ($raw_terms as $term_id) {
+					$term = get_term($term_id);
+					if ($term instanceof WP_Term && (! $taxonomy_slug || $term->taxonomy === $taxonomy_slug)) {
+						$term_ids[] = (int) $term_id;
+					}
+				}
+			}
+
+			if (! empty($term_ids)) {
+				update_post_meta($post_id, '_kcas_terms', array_values(array_unique($term_ids)));
+			} else {
+				delete_post_meta($post_id, '_kcas_terms');
+			}
+		}
+		// If location is not specific_terms, leave _kcas_terms untouched.
 
 		// ── Position ──────────────────────────────────────────────────────────
 		$position = isset($_POST['kcas_position'])
@@ -1051,6 +1189,7 @@ class KCAS_Admin
 					'cpt_archives'        => esc_html__('CPT archives', 'kayce-custom-archive-sections'),
 					'cpt_singles'         => esc_html__('CPT singles', 'kayce-custom-archive-sections'),
 					'taxonomy_archives'   => esc_html__('Taxonomy archives', 'kayce-custom-archive-sections'),
+					'specific_terms'      => esc_html__('Specific terms', 'kayce-custom-archive-sections'),
 				);
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				echo isset($labels[$location]) ? $labels[$location] : esc_html($location);
