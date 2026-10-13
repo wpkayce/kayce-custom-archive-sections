@@ -2,7 +2,7 @@
 Contributors: wpkayce
 Tags: archive, content sections, blog, category, gutenberg
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.0.0
 License: GPL-2.0+
@@ -12,11 +12,13 @@ Add reusable content sections before or after posts on any archive page — blog
 
 == Description ==
 
-**Kayce Custom Archive Sections** lets you create and manage reusable content areas that appear automatically before or after the post loop on your WordPress archive pages — no theme file editing required.
+Your theme decides what your blog index, category archives, tag pages and search results look like — and usually gives you nowhere to put your own content on them. Adding a newsletter sign-up beneath your blog feed, a disclaimer at the top of one particular category, or a seasonal banner that retires itself on a set date normally means editing theme files, and losing that work the next time the theme updates.
 
-Each section is a regular WordPress post, so you can design it with the **block editor (Gutenberg)** or **Elementor**, publish it once, and it shows up exactly where you set it.
+**Kayce Custom Archive Sections** turns each of those into an ordinary WordPress post. Write it, publish it once, and tell it which pages it belongs on. Nothing is hard-coded into your theme, so nothing breaks when your theme changes.
 
-The plugin works with both **classic PHP themes** and modern **Full Site Editing (FSE) / block themes** like Twenty Twenty-Five — out of the box, with no extra configuration.
+Because each section is a regular post, you design it with the **block editor (Gutenberg)** or **Elementor** — there is no shortcode syntax to learn and no page-builder lock-in. You choose where it appears, whether it sits above or below the posts, and who gets to see it.
+
+It works with both **classic PHP themes** and modern **Full Site Editing (FSE) / block themes** like Twenty Twenty-Five — out of the box, with no extra configuration.
 
 **Archive locations supported:**
 
@@ -154,10 +156,10 @@ The included `uninstall.php` permanently deletes all Archive Section posts and t
 
 == Screenshots ==
 
-1. The Archive Sections list table with Active, Location, Position, and Visibility columns.
-2. The Archive Section Settings meta box showing all controls: location, specific-category picker, position, active toggle, visibility, and preview link.
-3. A custom section displayed before the post loop on a category archive page.
-4. A custom section displayed after the post loop on the blog index page.
+1. A section displayed above the post list on the blog index. Sections are ordinary block editor posts, so they inherit your theme's own styling.
+2. Every section at a glance — where each one appears, whether it sits before or after the posts, and who can see it. Drag the handle to reorder them.
+3. Editing a section. The Archive Section Settings panel sits beside your content, so you pick the target pages without leaving the editor.
+4. The full set of display controls: position, visibility by login state, a date range to show within, device targeting, and user roles.
 
 == Changelog ==
 
